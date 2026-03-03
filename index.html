@@ -223,6 +223,39 @@
             margin: 6px 0;
         }
 
+        .terminal-output {
+            border: 1px solid rgba(74, 158, 255, 0.25);
+            border-radius: 10px;
+            padding: 8px 10px;
+            margin: 10px 0;
+            background: rgba(0, 0, 0, 0.25);
+            min-height: 72px;
+            font-size: 12px;
+            color: #b9dcff;
+            white-space: pre-wrap;
+        }
+
+        .terminal-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-input {
+            flex: 1;
+            appearance: none;
+            border: 1px solid rgba(74, 158, 255, 0.35);
+            background: rgba(0, 0, 0, 0.2);
+            color: #e4f1ff;
+            font: inherit;
+            padding: 8px 10px;
+            border-radius: 10px;
+            outline: none;
+        }
+
+        .terminal-input:focus {
+            border-color: rgba(74, 158, 255, 0.75);
+        }
+
         .modal-iframe {
             width: min(760px, calc(100vw - 24px));
         }
@@ -3192,6 +3225,13 @@
     stage.addEventListener('click', (e) => {
         if (e.target && e.target.closest && e.target.closest('.entity-link')) return;
         if (e.target && e.target.closest && e.target.closest('.entity-popup-window')) return;
+        const inBottomLeftZone = e.clientX <= window.innerWidth * 0.1 && e.clientY >= window.innerHeight * 0.9;
+        if (inBottomLeftZone && !terminalOpened) {
+            bottomLeftPelletCount++;
+            if (bottomLeftPelletCount >= 10) {
+                openTerminalPopup();
+            }
+        }
         spawnPelletAtClientPoint(e.clientX, e.clientY);
     });
 
@@ -3232,6 +3272,171 @@
         chatOpened = true;
         stopChatAutoOpen();
         openEntityPopup(chatUrl, 'chat');
+    }
+
+    const onionClubUrl = 'https://www3.cbox.ws/box/?boxid=3524471&boxtag=aAEfAd';
+    let terminalOpened = false;
+    let bottomLeftPelletCount = 0;
+
+    function openTerminalPopup() {
+        if (terminalOpened) return;
+        terminalOpened = true;
+
+        const popupId = ++popupIdCounter;
+        const offsetX = 12 + (popupStackOffset % 5) * 30;
+        const offsetY = 56 + (popupStackOffset % 5) * 30;
+        popupStackOffset++;
+
+        const popup = document.createElement('div');
+        popup.className = 'modal entity-popup-window';
+        popup.setAttribute('role', 'dialog');
+        popup.setAttribute('aria-modal', 'true');
+        popup.setAttribute('data-popup-id', popupId);
+        popup.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+
+        popup.innerHTML = `
+            <div class="modal-header">
+                <div class="modal-title">terminal</div>
+                <button class="modal-close" type="button">close</button>
+            </div>
+            <div class="terminal-output" aria-live="polite">enter code:</div>
+            <div class="terminal-row">
+                <input class="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="terminal code" />
+                <button class="modal-close" type="button" data-terminal-submit="1">enter</button>
+            </div>
+        `;
+
+        popupsContainer.appendChild(popup);
+
+        const header = popup.querySelector('.modal-header');
+        const closeBtn = popup.querySelector('.modal-close');
+        const outputEl = popup.querySelector('.terminal-output');
+        const inputEl = popup.querySelector('input');
+        const submitBtn = popup.querySelector('[data-terminal-submit="1"]');
+
+        const state = {
+            id: popupId,
+            el: popup,
+            header,
+            iframe: null,
+            dragging: false,
+            currentX: offsetX,
+            currentY: offsetY,
+            startX: 0,
+            startY: 0,
+            startTransX: 0,
+            startTransY: 0
+        };
+
+        activePopups.push(state);
+
+        function bringToFront() {
+            const maxZ = activePopups.reduce((max, p) => {
+                const z = parseInt(getComputedStyle(p.el).zIndex, 10) || 80;
+                return Math.max(max, z);
+            }, 80);
+            popup.style.zIndex = maxZ + 1;
+        }
+
+        function closePopup() {
+            const idx = activePopups.findIndex(p => p.id === popupId);
+            if (idx >= 0) activePopups.splice(idx, 1);
+            popup.remove();
+        }
+
+        function handleSubmit() {
+            const raw = (inputEl.value || '').trim();
+            const code = raw.toLowerCase();
+
+            if (!code) {
+                outputEl.textContent = 'enter code:';
+                return;
+            }
+
+            if (code === 'onionclub') {
+                outputEl.textContent = 'accepted';
+                openEntityPopup(onionClubUrl, 'onion cafe');
+                inputEl.value = '';
+                return;
+            }
+
+            if (code === 'fishi time') {
+                fishPoints += 1000000;
+                renderFishPoints();
+                outputEl.textContent = 'accepted';
+                inputEl.value = '';
+                return;
+            }
+
+            outputEl.textContent = 'invalid code';
+            inputEl.select();
+        }
+
+        closeBtn.addEventListener('click', closePopup);
+        submitBtn.addEventListener('click', handleSubmit);
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSubmit();
+            }
+        });
+
+        popup.addEventListener('pointerdown', bringToFront);
+
+        function onPointerDown(e) {
+            if (e.button != null && e.button !== 0) return;
+            if (e.target.closest('button, a, input, textarea, select')) return;
+
+            state.dragging = true;
+            popup.classList.add('is-dragging');
+            header.setPointerCapture(e.pointerId);
+
+            state.startX = e.clientX;
+            state.startY = e.clientY;
+            state.startTransX = state.currentX;
+            state.startTransY = state.currentY;
+
+            bringToFront();
+            e.preventDefault();
+        }
+
+        function onPointerMove(e) {
+            if (!state.dragging) return;
+
+            const dx = e.clientX - state.startX;
+            const dy = e.clientY - state.startY;
+
+            let nextX = state.startTransX + dx;
+            let nextY = state.startTransY + dy;
+
+            const maxX = Math.max(0, window.innerWidth - popup.offsetWidth);
+            const maxY = Math.max(0, window.innerHeight - popup.offsetHeight);
+
+            nextX = Math.max(0, Math.min(nextX, maxX));
+            nextY = Math.max(0, Math.min(nextY, maxY));
+
+            state.currentX = nextX;
+            state.currentY = nextY;
+            popup.style.transform = `translate(${nextX}px, ${nextY}px)`;
+        }
+
+        function onPointerUp(e) {
+            if (!state.dragging) return;
+            state.dragging = false;
+            popup.classList.remove('is-dragging');
+            try { header.releasePointerCapture(e.pointerId); } catch (_) {}
+        }
+
+        header.addEventListener('pointerdown', onPointerDown);
+        header.addEventListener('pointermove', onPointerMove);
+        header.addEventListener('pointerup', onPointerUp);
+        header.addEventListener('pointercancel', onPointerUp);
+
+        bringToFront();
+
+        setTimeout(() => {
+            try { inputEl.focus(); } catch (_) {}
+        }, 0);
     }
 
     function openSiteMap() {

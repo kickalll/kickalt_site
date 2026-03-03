@@ -1,0 +1,191 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BREADLOVER DOT HTML</title>
+  <style>
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Liberation Sans", sans-serif;
+    }
+
+    #bg {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: fill;
+      object-position: center;
+      transform: translateZ(0);
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    #stage {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      transform: translateZ(0);
+    }
+
+    .fly {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform: translate3d(0, 0, 0);
+      white-space: nowrap;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      mix-blend-mode: screen;
+      text-shadow:
+        0 0 10px rgba(0, 0, 0, 0.45),
+        0 0 22px rgba(255, 255, 255, 0.35);
+      will-change: transform;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #stage {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <img id="bg" src="BREADLOVE.png" alt="Bread love background" />
+  <div id="stage" aria-hidden="true"></div>
+
+  <script>
+    (function () {
+      const stage = document.getElementById("stage");
+      const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (prefersReduced) return;
+
+      const slogans = [
+        "BREAD IS BEAUTIFUL",
+        "ALL HAIL TOAST",
+        "LONG LIVE THE LOAF",
+        "CRUST I TRUST",
+        "BUNS = FUNS",
+        "BAGUETTE BESTIE",
+        "SOURDOUGH SUPREMACY",
+        "CINNAMON ROLL SOUL",
+        "CARBS WITH HEART",
+        "BREAD BRINGS JOY",
+        "YEAST = PEACE",
+        "RISE AND SHINE",
+        "BUTTER + BREAD = YES",
+        "SANDWICH MAGIC",
+        "WARM CRUMBS, WARM HEART",
+        "BREADLOVE FOREVER",
+        "FRESHLY BAKED VIBES",
+        "THE RISE IS RIGHT",
+      ];
+
+      const colors = [
+        "#ff9ad5",
+        "#ffd36b",
+        "#7cffc8",
+        "#7bb8ff",
+        "#ffffff",
+      ];
+
+      function rand(min, max) {
+        return min + Math.random() * (max - min);
+      }
+
+      function pick(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      const flyers = [];
+      const MAX = 80;
+
+      function spawn(x, y) {
+        if (flyers.length >= MAX) {
+          const old = flyers.shift();
+          old.el.remove();
+        }
+
+        const el = document.createElement("div");
+        el.className = "fly";
+        el.textContent = pick(slogans);
+        el.style.color = pick(colors);
+        el.style.fontSize = rand(14, 46).toFixed(1) + "px";
+        el.style.opacity = rand(0.55, 1).toFixed(2);
+
+        stage.appendChild(el);
+
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const px = x ?? rand(0, w);
+        const py = y ?? rand(0, h);
+
+        const speed = rand(0.6, 2.6);
+        const angle = rand(0, Math.PI * 2);
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed;
+        const spin = rand(-2.2, 2.2);
+        const phase = rand(0, Math.PI * 2);
+
+        flyers.push({ el, x: px, y: py, vx, vy, r: rand(-18, 18), spin, phase });
+      }
+
+      function seed(n) {
+        for (let i = 0; i < n; i++) spawn();
+      }
+
+      seed(26);
+
+      window.addEventListener("pointerdown", (e) => {
+        for (let i = 0; i < 10; i++) spawn(e.clientX + rand(-30, 30), e.clientY + rand(-30, 30));
+      });
+
+      let last = performance.now();
+      function tick(now) {
+        const dt = Math.min(34, now - last);
+        last = now;
+
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const t = now / 1000;
+
+        if (flyers.length < 55 && Math.random() < 0.18) spawn();
+
+        for (let i = 0; i < flyers.length; i++) {
+          const f = flyers[i];
+
+          f.x += (f.vx * dt) / 16;
+          f.y += (f.vy * dt) / 16;
+          f.r += f.spin;
+
+          if (f.x < -300) f.x = w + 280;
+          if (f.x > w + 300) f.x = -280;
+          if (f.y < -200) f.y = h + 180;
+          if (f.y > h + 200) f.y = -180;
+
+          const wobX = Math.sin(t * 3.6 + f.phase) * 12;
+          const wobY = Math.cos(t * 3.1 + f.phase) * 10;
+          const skew = Math.sin(t * 2.2 + f.phase) * 12;
+
+          f.el.style.transform = `translate3d(${(f.x + wobX).toFixed(1)}px, ${(f.y + wobY).toFixed(1)}px, 0) rotate(${f.r.toFixed(1)}deg) skew(${skew.toFixed(1)}deg)`;
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
