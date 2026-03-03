@@ -214,12 +214,12 @@
 
     <!-- Open Fridge View with Meals -->
     <div class="meals-view">
-      <div class="ascii">                                       __________________________
-                                      /_________________________/|
-      ______________________________ /_________________________/ |
+      <div class="ascii">                                        __________________________
+                                       /_________________________/|
+       ______________________________ /_________________________/ |
       |                             ||                         |  |
       |    for week of              ||                         |  |
-      |    2-22-2026                ||                         |  |
+      | <span id="prev-week" class="meal-btn">&lt;&lt;</span> <span id="week-of">no data   </span> <span id="next-week" class="meal-btn">&gt;&gt;</span>            ||                         |  |
       |                             ||                         |  |
       |                             ||  ________  ________     |  |
       |               _________     || | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |    |  |
@@ -239,10 +239,10 @@
       |                             ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
       |                             ||  |________||________|   |  |
       |                             ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
-      |       <span class="meal-line" id="meal-line-1">                </span>      ||  |________||________|   |  |
-      |       <span class="meal-line" id="meal-line-2">                </span>      ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
-      |       <span class="meal-line" id="meal-line-3">                </span>      ||  |________||________|   |  |
-      |       <span class="meal-line" id="meal-line-4">                </span>      ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
+      |   <span class="meal-line" id="meal-line-1">                    </span>  ||  |________||________|   |  |
+      |   <span class="meal-line" id="meal-line-2">                    </span>  ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
+      |   <span class="meal-line" id="meal-line-3">                    </span>  ||  |________||________|   |  |
+      |   <span class="meal-line" id="meal-line-4">                    </span>  ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
       |                             ||  |________||________|   | /
       |_____________________________||_________________________|/</div>
 
@@ -254,17 +254,191 @@
     <a href="index.html" class="back-link">&#8592; home</a>
   </div>
 
+  <input type="file" id="csv-picker" accept=".csv,text/csv" style="display:none" />
+
   <script>
-    const FIXED_WIDTH = 16;
-    
-    const mealData = {
-      a: ['Bratwurst', 'Potatos', 'Brussel Sprouts', 'Greek Yogurt'],
-      b: ['Fried Rice', 'Chicken', 'Vegetables']
-    };
+    const FIXED_WIDTH = 24;
+    const WEEK_OF_WIDTH = 10;
+
+    let mealData = { a: [], b: [] };
+    let mealEntries = [];
+    let currentEntryIndex = -1;
 
     function padText(text, width) {
       if (text.length >= width) return text.substring(0, width);
       return text + ' '.repeat(width - text.length);
+    }
+
+    function parseCsv(text) {
+      const rows = [];
+      let row = [];
+      let field = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+
+        if (inQuotes) {
+          if (ch === '"') {
+            const next = text[i + 1];
+            if (next === '"') {
+              field += '"';
+              i++;
+            } else {
+              inQuotes = false;
+            }
+          } else {
+            field += ch;
+          }
+          continue;
+        }
+
+        if (ch === '"') {
+          inQuotes = true;
+          continue;
+        }
+
+        if (ch === ',') {
+          row.push(field);
+          field = '';
+          continue;
+        }
+
+        if (ch === '\n') {
+          row.push(field);
+          field = '';
+          const isBlank = row.every(v => (v || '').trim() === '');
+          if (!isBlank) rows.push(row);
+          row = [];
+          continue;
+        }
+
+        if (ch === '\r') continue;
+
+        field += ch;
+      }
+
+      row.push(field);
+      const isBlank = row.every(v => (v || '').trim() === '');
+      if (!isBlank) rows.push(row);
+
+      return rows;
+    }
+
+    function parseMealList(field) {
+      return (field || '')
+        .split('|')
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    function setWeekOfText(text) {
+      const weekOfEl = document.getElementById('week-of');
+      if (!weekOfEl) return;
+      weekOfEl.textContent = padText(text, WEEK_OF_WIDTH);
+    }
+
+    function setupCsvPickerFallback() {
+      const picker = document.getElementById('csv-picker');
+      const weekOfEl = document.getElementById('week-of');
+      if (!picker || !weekOfEl) return;
+
+      function openPicker() {
+        picker.value = '';
+        picker.click();
+      }
+
+      weekOfEl.classList.add('meal-btn');
+      weekOfEl.addEventListener('click', openPicker);
+
+      picker.addEventListener('change', async function() {
+        const file = picker.files && picker.files[0];
+        if (!file) return;
+
+        try {
+          const text = await file.text();
+          mealEntries = parseMealEntriesFromCsvText(text);
+          if (mealEntries.length) setCurrentEntryIndex(mealEntries.length - 1);
+          else setCurrentEntryIndex(-1);
+        } catch {
+          setCurrentEntryIndex(-1);
+        }
+      });
+    }
+
+    function syncMealDisplayForSelection() {
+      const mealA = document.getElementById('meal-a');
+      const mealB = document.getElementById('meal-b');
+
+      if (mealA && mealA.checked) updateMealDisplay('a');
+      else if (mealB && mealB.checked) updateMealDisplay('b');
+      else updateMealDisplay(null);
+    }
+
+    function setCurrentEntryIndex(newIndex) {
+      if (!mealEntries.length) {
+        currentEntryIndex = -1;
+        mealData = { a: [], b: [] };
+        setWeekOfText('no data');
+        syncMealDisplayForSelection();
+        return;
+      }
+
+      const len = mealEntries.length;
+      const normalized = ((newIndex % len) + len) % len;
+      currentEntryIndex = normalized;
+      mealData = mealEntries[currentEntryIndex].meals;
+      setWeekOfText(mealEntries[currentEntryIndex].weekOfRaw);
+      syncMealDisplayForSelection();
+    }
+
+    function parseMealEntriesFromCsvText(text) {
+      const rows = parseCsv(text);
+      if (!rows.length) return [];
+
+      const header = rows[0].map(h => (h || '').trim().toLowerCase());
+      let startRowIndex = 0;
+      let weekOfIndex = 0;
+      let mealAIndex = 1;
+      let mealBIndex = 2;
+
+      if (header.includes('week_of')) {
+        startRowIndex = 1;
+        weekOfIndex = header.indexOf('week_of');
+        mealAIndex = header.indexOf('meal_a');
+        mealBIndex = header.indexOf('meal_b');
+
+        if (mealAIndex < 0) mealAIndex = 1;
+        if (mealBIndex < 0) mealBIndex = 2;
+      }
+
+      const entries = [];
+      for (let i = startRowIndex; i < rows.length; i++) {
+        const row = rows[i];
+        const weekOfRaw = (row[weekOfIndex] || '').trim();
+        if (!weekOfRaw) continue;
+
+        const weekOf = new Date(weekOfRaw);
+        if (Number.isNaN(weekOf.getTime())) continue;
+
+        const meals = {
+          a: parseMealList(row[mealAIndex] || ''),
+          b: parseMealList(row[mealBIndex] || '')
+        };
+
+        entries.push({ weekOf, weekOfRaw, meals });
+      }
+
+      entries.sort((x, y) => x.weekOf.getTime() - y.weekOf.getTime());
+      return entries;
+    }
+
+    async function loadMealEntriesFromCsv() {
+      const url = new URL('mealpreplog.csv', document.baseURI);
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to load mealpreplog.csv');
+      const text = await response.text();
+      return parseMealEntriesFromCsvText(text);
     }
 
     function updateMealDisplay(meal) {
@@ -276,7 +450,7 @@
           line.style.color = '';
         });
       } else {
-        const items = mealData[meal];
+        const items = mealData[meal] || [];
         lines.forEach((line, index) => {
           if (index < items.length) {
             line.textContent = padText(items[index], FIXED_WIDTH);
@@ -304,6 +478,34 @@
         updateMealDisplay(null);
       }
     });
+
+    document.getElementById('prev-week').addEventListener('click', function() {
+      if (!mealEntries.length) return;
+      if (currentEntryIndex < 0) setCurrentEntryIndex(mealEntries.length - 1);
+      else setCurrentEntryIndex(currentEntryIndex - 1);
+    });
+
+    document.getElementById('next-week').addEventListener('click', function() {
+      if (!mealEntries.length) return;
+      if (currentEntryIndex < 0) setCurrentEntryIndex(mealEntries.length - 1);
+      else setCurrentEntryIndex(currentEntryIndex + 1);
+    });
+
+    (async function init() {
+      try {
+        mealEntries = await loadMealEntriesFromCsv();
+      } catch {
+        mealEntries = [];
+      }
+
+      if (!mealEntries.length) {
+        setupCsvPickerFallback();
+        setCurrentEntryIndex(-1);
+        return;
+      }
+
+      setCurrentEntryIndex(mealEntries.length - 1);
+    })();
 
     updateMealDisplay(null);
   </script>

@@ -125,6 +125,12 @@
             pointer-events: auto;
         }
 
+        .ui-stack {
+            display: flex;
+            flex-direction: row;
+            gap: 8px;
+        }
+
         .site-map-btn {
             appearance: none;
             border: 1px solid rgba(74, 158, 255, 0.4);
@@ -258,7 +264,10 @@
 <body>
 
 <div class="ui">
-    <button class="site-map-btn" id="siteMapBtn" type="button">site map</button>
+    <div class="ui-stack">
+        <button class="site-map-btn" id="siteMapBtn" type="button">site map</button>
+        <button class="site-map-btn" id="chatBtn" type="button">chat</button>
+    </div>
 </div>
 
 <div class="ui ui-right">
@@ -275,6 +284,7 @@
             <li><a href="#" id="siteMapChatBtn">chat</a></li>
             <li><a href="guestbook.html" target="_blank" rel="noopener noreferrer">guestbook</a></li>
             <li><a href="mealprep.html" target="_blank" rel="noopener noreferrer">meal prep</a></li>
+            <li><a href="neighbors.html" target="_blank" rel="noopener noreferrer">neighbors</a></li>
         </ul>
     </div>
 </div>
@@ -313,16 +323,19 @@
 {
   "artLeft": [
     "  ;,//;,    ,;/",
-    " o:::::::;;///",
+    " oNEO PAGE;///",
     ">::::::::;;\\\\\\",
     "  ''\\\\\\\\\\\\' ';\\"
   ],
   "artRight": [
     "\\;,    ,;//;,  ",
-    "\\\\\\;;:::::::o ",
+    "\\\\\\;NEO PAGEo ",
     "//////;;::::::::>",
     "//;' '\\\\\\\\\\\\''  "
-  ]
+  ],
+  "linkUrl": "https://neocities.org/site/kickalt",
+  "shadowColor": "rgba(255, 128, 145, 0.705)",
+  "shadowHoverColor": "rgba(252, 158, 63, 0.795)"
 }
 </script>
 </template>
@@ -3183,9 +3196,43 @@
     });
 
     const siteMapBtn = document.getElementById('siteMapBtn');
+    const chatBtn = document.getElementById('chatBtn');
     const siteMapModal = document.getElementById('siteMapModal');
     const siteMapClose = document.getElementById('siteMapClose');
     const siteMapChatBtn = document.getElementById('siteMapChatBtn');
+
+    const chatUrl = 'https://www3.cbox.ws/box/?boxid=3552838&boxtag=zm436D';
+    let chatOpened = false;
+    let chatAutoOpenTimeoutId = null;
+    let chatCountdownIntervalId = null;
+    let chatSecondsRemaining = 7;
+
+    function updateChatButtonCountdown() {
+        if (chatOpened) {
+            chatBtn.textContent = 'chat';
+            return;
+        }
+        chatBtn.textContent = `chat (${chatSecondsRemaining})`;
+    }
+
+    function stopChatAutoOpen() {
+        if (chatAutoOpenTimeoutId !== null) {
+            clearTimeout(chatAutoOpenTimeoutId);
+            chatAutoOpenTimeoutId = null;
+        }
+        if (chatCountdownIntervalId !== null) {
+            clearInterval(chatCountdownIntervalId);
+            chatCountdownIntervalId = null;
+        }
+        chatBtn.textContent = 'chat';
+    }
+
+    function openChatPopup() {
+        if (chatOpened) return;
+        chatOpened = true;
+        stopChatAutoOpen();
+        openEntityPopup(chatUrl, 'chat');
+    }
 
     function openSiteMap() {
         siteMapModal.classList.add('is-open');
@@ -3210,9 +3257,27 @@
 
     siteMapChatBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        openEntityPopup('https://www3.cbox.ws/box/?boxid=3552838&boxtag=zm436D', 'chat');
+        openChatPopup();
         closeSiteMap();
     });
+
+    chatBtn.addEventListener('click', () => {
+        openChatPopup();
+    });
+
+    updateChatButtonCountdown();
+    chatCountdownIntervalId = setInterval(() => {
+        if (chatOpened) return;
+        chatSecondsRemaining = Math.max(0, chatSecondsRemaining - 1);
+        updateChatButtonCountdown();
+        if (chatSecondsRemaining <= 0) {
+            openChatPopup();
+        }
+    }, 1000);
+
+    chatAutoOpenTimeoutId = setTimeout(() => {
+        openChatPopup();
+    }, 15000);
 
     const popupsContainer = document.getElementById('entityPopupsContainer');
     const activePopups = [];
