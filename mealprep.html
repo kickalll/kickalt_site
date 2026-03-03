@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Meal Prep</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a0a;
+      --fg: #f5f5f5;
+      --accent: #ff6b6b;
+      --muted: #888;
+      --card-bg: #151515;
+      --border: #2a2a2a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 700;
+      margin: 0 0 2rem;
+      letter-spacing: -0.03em;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .ascii {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: clamp(0.5rem, 1.5vw, 0.75rem);
+      white-space: pre;
+      line-height: 1.15;
+      display: inline-block;
+      text-align: left;
+      position: relative;
+    }
+
+    .fridge-view {
+      display: block;
+    }
+
+    .fridge-label {
+      cursor: pointer;
+      transition: transform 0.2s, filter 0.2s;
+      display: inline-block;
+    }
+
+    .fridge-label:hover {
+      transform: scale(1.02);
+      filter: drop-shadow(0 0 12px rgba(255, 107, 107, 0.3));
+    }
+
+    .fridge-hint {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 1rem;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 1; }
+    }
+
+    .meals-view {
+      display: none;
+      position: relative;
+    }
+
+    #toggle:checked ~ .fridge-view {
+      display: none;
+    }
+
+    #toggle:checked ~ .meals-view {
+      display: block;
+    }
+
+    .meal-btn {
+      cursor: pointer;
+      transition: color 0.2s, text-shadow 0.2s;
+      display: inline;
+    }
+
+    .meal-btn:hover {
+      color: var(--accent);
+      text-shadow: 0 0 8px rgba(255, 107, 107, 0.6);
+    }
+
+
+    .meal-line {
+      display: inline;
+      font-family: 'Courier New', Courier, monospace;
+      white-space: pre;
+    }
+
+    .back {
+      display: inline-block;
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .back:hover {
+      color: var(--accent);
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-top: 2rem;
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.95rem;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 2rem 1rem;
+      }
+
+      .ascii {
+        font-size: clamp(0.35rem, 1.2vw, 0.6rem);
+      }
+
+      .meal-display {
+        font-size: clamp(0.35rem, 1.2vw, 0.6rem);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>meal <span>prep</span></h1>
+
+    <input type="checkbox" id="toggle" />
+    <input type="radio" name="meal" id="meal-a" />
+    <input type="radio" name="meal" id="meal-b" />
+
+    <!-- Closed Fridge View -->
+    <div class="fridge-view">
+      <label for="toggle" class="fridge-label">
+        <div class="ascii">
+        __________________________
+       /_________________________/|
+      /_________________________/ |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |    _________            |  |
+     |   |         |           |  |
+     |   |  _____  |           |  |
+     |   | |     | |           |  |
+     |   | | ()()| |           |  |
+     |   | | \/\/| |           |  |
+     |   |_|_____|_|         _ |  |
+     |                      |H||  |
+     |                      |A||  |
+     |----------------------|N||  |
+     |                      |D||  |
+     |                      |L||  |
+     |                      |E||  |
+     |                      |_||  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         |  |
+     |                         | /
+     |_________________________|/
+        </div>
+      </label>
+      <p class="fridge-hint">click the fridge to open it</p>
+    </div>
+
+    <!-- Open Fridge View with Meals -->
+    <div class="meals-view">
+      <div class="ascii">                                       __________________________
+                                      /_________________________/|
+      ______________________________ /_________________________/ |
+      |                             ||                         |  |
+      |    for week of              ||                         |  |
+      |    2-22-2026                ||                         |  |
+      |                             ||                         |  |
+      |                             ||  ________  ________     |  |
+      |               _________     || | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |    |  |
+      |              |         |    || |________||________|    |  |
+      |              |         |    || | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |    |  |
+      |              |         |    || |________||________|    |  |
+      |              |   ()()  |    || | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |    |  |
+      |              |         |    || |________||________|    |  |
+      |              |_________|    || | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |    |  |
+      |                             || |________||________|    |  |
+      |=============================||=========================|  |
+      |                             ||                         |  |
+      |                             ||                         |  |
+      |                             ||                         |  |
+      |                             ||                         |  |
+      |                             ||   ________  ________    |  |
+      |                             ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
+      |                             ||  |________||________|   |  |
+      |                             ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
+      |       <span class="meal-line" id="meal-line-1">                </span>      ||  |________||________|   |  |
+      |       <span class="meal-line" id="meal-line-2">                </span>      ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
+      |       <span class="meal-line" id="meal-line-3">                </span>      ||  |________||________|   |  |
+      |       <span class="meal-line" id="meal-line-4">                </span>      ||  | <label for="meal-a" class="meal-btn">MEAL A</label> || <label for="meal-b" class="meal-btn">MEAL B</label> |   |  |
+      |                             ||  |________||________|   | /
+      |_____________________________||_________________________|/</div>
+
+      <br />
+      <label for="toggle" class="back">&#8592; close fridge</label>
+    </div>
+
+    <br />
+    <a href="index.html" class="back-link">&#8592; home</a>
+  </div>
+
+  <script>
+    const FIXED_WIDTH = 16;
+    
+    const mealData = {
+      a: ['Bratwurst', 'Potatos', 'Brussel Sprouts', 'Greek Yogurt'],
+      b: ['Fried Rice', 'Chicken', 'Vegetables']
+    };
+
+    function padText(text, width) {
+      if (text.length >= width) return text.substring(0, width);
+      return text + ' '.repeat(width - text.length);
+    }
+
+    function updateMealDisplay(meal) {
+      const lines = document.querySelectorAll('.meal-line');
+      
+      if (meal === null) {
+        lines.forEach(line => {
+          line.textContent = ' '.repeat(FIXED_WIDTH);
+          line.style.color = '';
+        });
+      } else {
+        const items = mealData[meal];
+        lines.forEach((line, index) => {
+          if (index < items.length) {
+            line.textContent = padText(items[index], FIXED_WIDTH);
+            line.style.color = 'var(--accent)';
+          } else {
+            line.textContent = ' '.repeat(FIXED_WIDTH);
+            line.style.color = '';
+          }
+        });
+      }
+    }
+
+    document.getElementById('meal-a').addEventListener('change', function() {
+      if (this.checked) updateMealDisplay('a');
+    });
+
+    document.getElementById('meal-b').addEventListener('change', function() {
+      if (this.checked) updateMealDisplay('b');
+    });
+
+    document.getElementById('toggle').addEventListener('change', function() {
+      if (!this.checked) {
+        document.getElementById('meal-a').checked = false;
+        document.getElementById('meal-b').checked = false;
+        updateMealDisplay(null);
+      }
+    });
+
+    updateMealDisplay(null);
+  </script>
+</body>
+</html>

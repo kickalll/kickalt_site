@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Just Periods</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: stretch;
+            justify-content: stretch;
+            background: #050505;
+            color: #4a9eff;
+            font-family: "Space Mono", "Courier New", Courier, monospace;
+            overflow: hidden;
+        }
+
+        .stage {
+            position: relative;
+            flex: 1;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        pre {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+            font-size: clamp(10px, 1.5vw, 16px);
+            white-space: pre;
+            overflow: hidden;
+            letter-spacing: 0;
+        }
+
+        #periods {
+            color: #2b7dff;
+        }
+
+        #fish {
+            color: #ffffff;
+            inset: auto;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
+        }
+    </style>
+</head>
+<body>
+<div class="stage" aria-hidden="true">
+    <pre id="periods"></pre>
+    <pre id="fish"></pre>
+</div>
+<script>
+    const stage = document.querySelector('.stage');
+    const dotsPre = document.getElementById('periods');
+    const fishPre = document.getElementById('fish');
+    let resizeRaf;
+    let cols = 0;
+    let rows = 0;
+    let fishX = 0;
+    let fishY = 0;
+    let targetX = 0;
+    let targetY = 0;
+    let fishFlipped = false;
+    let charWidth = 8;
+    let charHeight = 16;
+
+    const fishArt = [
+        "  ;,//;,    ,;/",
+        " o:::::::;;///",
+        ">::::::::;;\\\\\\",
+        "  ''\\\\\\\\\\\\' ';\\"
+    ];
+
+    const fishArtFlipped = [
+        "\\;,    ,;//;,  ",
+        "\\\\\\;;:::::::o ",
+        "//////;;::::::::>",
+        "//;' '\\\\\\\\\\\\''  "
+    ];
+
+    function measureCharSize() {
+        const probe = document.createElement('span');
+        probe.textContent = '.';
+        probe.style.visibility = 'hidden';
+        dotsPre.appendChild(probe);
+        const rect = probe.getBoundingClientRect();
+        const computedLineHeight = parseFloat(getComputedStyle(dotsPre).lineHeight);
+        probe.remove();
+        return {
+            width: rect.width || 8,
+            height: computedLineHeight || rect.height || 16
+        };
+    }
+
+    function fillDots() {
+        const bounds = stage.getBoundingClientRect();
+        const measured = measureCharSize();
+        charWidth = measured.width;
+        charHeight = measured.height;
+
+        const overscan = 4;
+        cols = Math.max(1, Math.ceil(bounds.width / charWidth) + overscan);
+        rows = Math.max(1, Math.ceil(bounds.height / charHeight) + overscan);
+
+        const line = '.'.repeat(cols);
+        dotsPre.textContent = Array(rows).fill(line).join('\n');
+
+        fishX = Math.min(Math.max(0, fishX), Math.max(0, cols - 1));
+        fishY = Math.min(Math.max(0, fishY), Math.max(0, rows - 1));
+        targetX = Math.min(Math.max(0, targetX), Math.max(0, cols - 1));
+        targetY = Math.min(Math.max(0, targetY), Math.max(0, rows - 1));
+    }
+
+    function renderFish() {
+        const art = fishFlipped ? fishArtFlipped : fishArt;
+        fishPre.textContent = art.join('\n');
+        fishPre.style.transform = `translate(${fishX * charWidth}px, ${fishY * charHeight}px)`;
+    }
+
+    function moveFish() {
+        if (fishX === targetX && fishY === targetY) {
+            const maxX = Math.max(0, cols - 20);
+            const maxY = Math.max(0, rows - 5);
+            targetX = Math.floor(Math.random() * (maxX + 1));
+            targetY = Math.floor(Math.random() * (maxY + 1));
+            if (targetX > fishX) {
+                fishFlipped = true;
+            } else {
+                fishFlipped = false;
+            }
+        }
+
+        if (fishX < targetX) fishX++;
+        else if (fishX > targetX) fishX--;
+
+        if (fishY < targetY) fishY++;
+        else if (fishY > targetY) fishY--;
+
+        renderFish();
+    }
+
+    function animate() {
+        moveFish();
+        setTimeout(() => requestAnimationFrame(animate), 80);
+    }
+
+    function queueFill() {
+        cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(() => {
+            fillDots();
+            renderFish();
+        });
+    }
+
+    window.addEventListener('resize', queueFill);
+    window.addEventListener('load', () => {
+        queueFill();
+        setTimeout(animate, 500);
+    });
+</script>
+</body>
+</html>

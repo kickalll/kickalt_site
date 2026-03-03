@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>hi i'm kick</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a0a;
+      --fg: #f5f5f5;
+      --accent: #ff6b6b;
+      --muted: #888;
+      --card-bg: #151515;
+      --border: #2a2a2a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 10vw, 6rem);
+      font-weight: 700;
+      margin: 0 0 1rem;
+      letter-spacing: -0.03em;
+    }
+
+    .hero h1 span {
+      color: var(--accent);
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--muted);
+      margin: 0;
+      max-width: 480px;
+      margin-inline: auto;
+    }
+
+    .guestbook {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    .guestbook h2 {
+      margin: 0 0 1.5rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .guestbook-frame {
+      width: 100%;
+      height: 500px;
+      border: none;
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 2rem 1rem;
+      }
+
+      .guestbook {
+        padding: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <h1>hi i'm <span>kick</span></h1>
+      <p>thanks for visiting my corner of the internet i watched the onionboots video and now I'm working on this cool site. <a href="mealprep.html">check out my meal prep</a> or <a href="mealprep.html">head back to the aquarium</a></p>
+    </header>
+
+    <section class="guestbook">
+      <h2>SAY HELLO :3</h2>
+      <iframe 
+        class="guestbook-frame" 
+        src="https://kickalt.atabook.org/" 
+        title="SAY HELLO"
+        loading="lazy"
+      ></iframe>
+    </section>
+  </div>
+
+</body>
+</html>
