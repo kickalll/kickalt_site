@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Net Neighbors - Detective Board</title>
+    <style>
+        :root {
+            --cork-light: #c9a66b;
+            --cork-dark: #8b6914;
+            --pin-red: #c41e3a;
+            --string-red: #8b0000;
+            --observed-blue: #4a9eff;
+            --wood-frame: #5c3d2e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        .board-viewport {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            cursor: grab;
+        }
+
+        .board-viewport.is-dragging {
+            cursor: grabbing;
+        }
+
+        .cork-board {
+            position: absolute;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,0,0,0.03) 2px,
+                    rgba(0,0,0,0.03) 4px
+                ),
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0,0,0,0.03) 2px,
+                    rgba(0,0,0,0.03) 4px
+                ),
+                linear-gradient(135deg, var(--cork-light) 0%, var(--cork-dark) 50%, var(--cork-light) 100%);
+            border: 12px solid var(--wood-frame);
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.4);
+            will-change: transform;
+        }
+
+        .string-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            z-index: 1;
+        }
+
+        .string-line {
+            stroke: var(--string-red);
+            stroke-width: 2;
+            fill: none;
+            filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3));
+            pointer-events: stroke;
+        }
+
+        .string-line.is-observed {
+            stroke: var(--observed-blue);
+        }
+
+        .button-card {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+            transition: transform 0.2s ease;
+        }
+
+        .button-card:hover {
+            z-index: 100;
+        }
+
+        .button-card:hover .button-frame {
+            transform: scale(1.1);
+        }
+
+        .pin {
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, var(--pin-red) 60%, #8b0000);
+            border-radius: 50%;
+            box-shadow: 
+                2px 2px 4px rgba(0,0,0,0.4),
+                inset -1px -1px 2px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 3;
+        }
+
+        .pin.is-observed {
+            background: radial-gradient(circle at 30% 30%, #b9dcff, var(--observed-blue) 60%, #1b4c8f);
+        }
+
+        .button-frame {
+            background: #fff;
+            padding: 4px;
+            box-shadow: 2px 3px 8px rgba(0,0,0,0.4);
+            margin-top: -4px;
+            transition: transform 0.2s ease;
+        }
+
+        .button-frame img {
+            display: block;
+            width: 88px;
+            height: 31px;
+            image-rendering: pixelated;
+        }
+
+        .copy-section {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 200;
+        }
+
+        .copy-section details {
+            background: rgba(40, 30, 20, 0.95);
+            border: 3px solid var(--wood-frame);
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .copy-section summary {
+            padding: 10px 15px;
+            cursor: pointer;
+            color: var(--pin-red);
+            font-size: 0.9rem;
+            font-weight: bold;
+            list-style: none;
+            user-select: none;
+        }
+
+        .copy-section summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .copy-section summary::before {
+            content: '▶ ';
+            font-size: 0.7rem;
+        }
+
+        .copy-section details[open] summary::before {
+            content: '▼ ';
+        }
+
+        .copy-section summary:hover {
+            color: #ff6b6b;
+        }
+
+        .copy-section-content {
+            padding: 0 15px 15px 15px;
+            color: #f0e6d3;
+            max-width: 320px;
+        }
+
+        .copy-section img {
+            image-rendering: pixelated;
+            margin-bottom: 8px;
+        }
+
+        .copy-section textarea {
+            width: 100%;
+            height: 60px;
+            background: #1a1a1a;
+            color: #4a9eff;
+            border: 1px solid #444;
+            padding: 8px;
+            font-family: "Courier New", monospace;
+            font-size: 0.7rem;
+            resize: none;
+        }
+
+        .ez-read-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(40, 30, 20, 0.95);
+            border: 3px solid var(--wood-frame);
+            border-radius: 8px;
+            padding: 10px 15px;
+            z-index: 200;
+            color: #b9dcff;
+            font-family: inherit;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .ez-read-btn:hover {
+            color: #fff;
+            border-color: var(--pin-red);
+        }
+
+        .zoom-controls {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(40, 30, 20, 0.95);
+            border: 3px solid var(--wood-frame);
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+
+        .zoom-label {
+            color: #b9dcff;
+            font-family: inherit;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            min-width: 3.5ch;
+            text-align: right;
+        }
+
+        .zoom-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--wood-frame);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #ff6b6b, var(--pin-red) 60%, #8b0000);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        .zoom-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border: none;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #ff6b6b, var(--pin-red) 60%, #8b0000);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            cursor: pointer;
+        }
+
+        .button-card.is-card-dragging {
+            cursor: grabbing !important;
+            z-index: 50;
+            transition: none;
+        }
+
+        .button-card.is-card-dragging .button-frame {
+            transform: scale(1.1);
+        }
+
+        .ez-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 300;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .ez-modal-backdrop.is-open {
+            display: flex;
+        }
+
+        .ez-modal {
+            background: rgba(40, 30, 20, 0.98);
+            border: 4px solid var(--wood-frame);
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+        }
+
+        .ez-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--wood-frame);
+        }
+
+        .ez-modal-header h2 {
+            color: var(--pin-red);
+            font-size: 1.2rem;
+            margin: 0;
+        }
+
+        .ez-modal-close {
+            background: none;
+            border: 2px solid var(--wood-frame);
+            border-radius: 6px;
+            color: #b9dcff;
+            padding: 5px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .ez-modal-close:hover {
+            color: #fff;
+            border-color: var(--pin-red);
+        }
+
+        .ez-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .ez-category-title {
+            color: var(--pin-red);
+            font-size: 0.95rem;
+            margin: 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid rgba(92, 61, 46, 0.8);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .ez-category-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            padding-top: 12px;
+        }
+
+        .ez-grid-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .ez-grid-item img {
+            image-rendering: pixelated;
+            border: 2px solid #fff;
+            box-shadow: 2px 2px 6px rgba(0,0,0,0.4);
+        }
+
+        .ez-grid-item:hover img {
+            border-color: var(--pin-red);
+        }
+    </style>
+</head>
+<body>
+    <div class="board-viewport" id="boardViewport">
+        <div class="cork-board" id="corkBoard">
+            <svg class="string-svg" id="stringSvg"></svg>
+            <!-- Buttons will be generated from templates -->
+        </div>
+    </div>
+
+    <div class="zoom-controls" id="zoomControls">
+        <span class="zoom-label" id="zoomLabel">100%</span>
+        <input class="zoom-slider" id="zoomSlider" type="range" min="0" max="200" value="100" step="1" title="Zoom">
+    </div>
+
+    <button class="ez-read-btn" id="ezReadBtn">EZ READ MODE</button>
+
+    <div class="ez-modal-backdrop" id="ezModal">
+        <div class="ez-modal">
+            <div class="ez-modal-header">
+                <h2>WELCOME TO EZ MODE PLAYA</h2>
+                <button class="ez-modal-close" id="ezModalClose">close</button>
+            </div>
+            <div class="ez-grid" id="ezGrid">
+                <!-- Grid items generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div class="copy-section">
+        <details>
+            <summary>📌 Grab My Button!</summary>
+            <div class="copy-section-content">
+                <img src="neighborbutton.gif" alt="kick's Button" width="88" height="31">
+                <textarea readonly onclick="this.select()">&lt;a href="https://kickalt.neocities.org" target="_blank"&gt;&lt;img src="https://kickalt.neocities.org/neighborbutton.gif" alt="kick is cool" width="88" height="31"&gt;&lt;/a&gt;</textarea>
+            </div>
+        </details>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════════
+         NEIGHBOR BUTTON TEMPLATES
+         
+         To add a new button:
+         1. Copy a template block below
+         2. Set data-id to a unique identifier
+         3. Set data-x and data-y for position (percentage of board)
+         4. Set data-rotation for angle (-30 to 30 degrees)
+         5. Set data-connects-to with comma-separated IDs of buttons to connect to
+         6. Update the JSON with href, imgSrc, alt, and title
+         ═══════════════════════════════════════════════════════════════════════════ -->
+
+    <!-- MY BUTTON (center hub) -->
+    <template class="neighbor-button" data-id="kick" data-category="MY PEEPS" data-x="70" data-y="50" data-rotation="0" data-connects-to="onio, sandman" data-is-hub="true">
+        <script type="application/json">
+        {
+            "href": "https://kickalt.neocities.org",
+            "imgSrc": "neighborbutton.gif",
+            "alt": "kick's Site",
+            "title": "You are here!"
+        }
+        </script>
+    </template>
+
+    <!-- Sandman's Dreamscape -->
+    <template class="neighbor-button" data-id="sandman" data-category="MY PEEPS" data-connects-to="kick">
+        <script type="application/json">
+        {
+            "href": "https://sandmans-dreamscape.vercel.app/",
+            "imgSrc": "https://sandmans-dreamscape.vercel.app/thebutton.gif",
+            "alt": "The land of your dreams",
+            "title": "Check out the Dreamscape"
+        }
+        </script>
+    </template>
+
+    <!-- Kaz -->
+    <template class="neighbor-button" data-id="kaz" data-category="MY PEEPS" data-connects-to="kick">
+        <script type="application/json">
+        {
+            "href": "https://dwarvenmeadhall.neocities.org",
+            "imgSrc": "https://dwarvenmeadhall.neocities.org/button.gif",
+            "alt": "Kazmirl is awesome!",
+            "title": "Visit the Mead Hall!"
+        }
+        </script>
+    </template>
+
+     <!-- Onio Café -->
+    <template class="neighbor-button" data-id="onio" data-category="MY PEEPS, QOOL" data-x="40" data-connects-to="" data-is-hub="true">
+        <script type="application/json">
+        {
+            "href": "https://onio.neocities.org",
+            "imgSrc": "https://onio.neocities.org/thebutton.gif",
+            "alt": "Come Chat With Us!",
+            "title": "Visit Onio Café"
+        }
+        </script>
+    </template>
+
+    <!-- The Lemur -->
+    <template class="neighbor-button" data-id="lemur" data-category="Net Neighbors" data-connects-to="kick,onio">
+        <script type="application/json">
+        {
+            "href": "https://the-lemur.neocities.org",
+            "imgSrc": "https://the-lemur.neocities.org/lemurbutton.gif",
+            "alt": "My corner of the internet!",
+            "title": "Visit my Corner of the internet!"
+        }
+        </script>
+    </template>
+
+
+    <!-- arachnoFlora -->
+    <template class="neighbor-button" data-id="arachnoflora" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://arachnoflora.neocities.org",
+            "imgSrc": "https://arachnoflora.neocities.org/my_buttons/buttonPaintdrop.gif",
+            "alt": "arachnoFlora's Button",
+            "title": "arachnoFlora's webzone"
+        }
+        </script>
+    </template>
+
+    <!-- Proton Aurum -->
+    <template class="neighbor-button" data-id="aurum" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://protonaurum.neocities.org/",
+            "imgSrc": "https://protonaurum.neocities.org/assets/images/buttons/aubig.png",
+            "alt": "protonaurum",
+            "title": "aurum"
+        }
+        </script>
+    </template>
+
+    <!-- Violet-99 -->
+    <template class="neighbor-button" data-id="violet99" data-category="QOOL" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://violet-99.neocities.org",
+            "imgSrc": "https://violet-99.neocities.org/violet-99-dark.gif",
+            "alt": "violet-99",
+            "title": "violet-99"
+        }
+        </script>
+    </template>
+
+    <!-- Kuroi -->
+    <template class="neighbor-button" data-id="kuroi" data-category="Net Neighbors, QOOL" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://kuroi.com.br",
+            "imgSrc": "https://kuroi.com.br/img/button1.png",
+            "alt": "Kuroi",
+            "title": "Kuroi"
+        }
+        </script>
+    </template>
+
+    <!-- Mrmister -->
+    <template class="neighbor-button" data-id="mrmister" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://mrmister.neocities.org/",
+            "imgSrc": "https://mrmister.neocities.org/donotclickthebutton.png",
+            "alt": "Mrmister's Empty Place",
+            "title": "The website of Mrmister"
+        }
+        </script>
+    </template>
+    
+    <!-- Mrmister -->
+    <template class="neighbor-button" data-id="g-ofree" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://g-ofree.neocities.org/",
+            "imgSrc": "https://g-ofree.neocities.org/button.gif",
+            "alt": "This Guy Signed My GuestbooK",
+            "title": "The website of kronndt"
+        }
+        </script>
+    </template>
+    
+        <!-- OLOROLLO -->
+    <template class="neighbor-button" data-id="olorollo" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://olorollo.neocities.org/",
+            "imgSrc": "https://olorollo.neocities.org/olorollo-btn.gif",
+            "alt": "The frog is WILD",
+            "title": "olorollo"
+        }
+        </script>
+    </template>
+
+    <!-- Bone Chimes -->
+    <template class="neighbor-button" data-id="bonechimes" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://dragomii.com",
+            "imgSrc": "https://dragomii.com/Personal/SerthaButton.gif",
+            "alt": "BONE CHIMES",
+            "title": "The Bone Zone"
+        }
+        </script>
+    </template>
+
+    <!-- minibite -->
+    <template class="neighbor-button" data-id="minibite" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://minicafe.neocities.org/",
+            "imgSrc": "https://minicafe.neocities.org/images/Button.png",
+            "alt": "Minibite's site",
+            "title": "Now with a blog!"
+        }
+        </script>
+    </template>
+
+    <!-- ylcoffee -->
+    <template class="neighbor-button" data-id="ylcoffee" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://ylcoffee.neocities.org",
+            "imgSrc": "https://ylcoffee.neocities.org/images/YLbutton.png",
+            "alt": "YLCoffee's site",
+            "title": "YLCOFFEE"
+        }
+        </script>
+    </template>
+
+    <!-- APANDA    -->
+    <template class="neighbor-button" data-id="apanda" data-category="Net Neighbors, QOOL" data-connects-to="kick">
+        <script type="application/json">
+        {
+            "href": "https://apanda.neocities.org/",
+            "imgSrc": "https://apanda.neocities.org/doremybutton.gif",
+            "alt": "APANDA's site",
+            "title": "I LOVE THEIR AESTHETIC"
+        }
+        </script>
+    </template>
+
+    <!-- Senno -->
+    <template class="neighbor-button" data-id="senno" data-category="Net Neighbors" data-connects-to="kick">
+        <script type="application/json">
+        {
+            "href": "https://senno.neocities.org/",
+            "imgSrc": "https://senno.neocities.org/assets/img/sennobutton.gif",
+            "alt": "Senno's site",
+            "title": "SENNO HAS A COOL BACKGROUND"
+        }
+        </script>
+    </template>
+
+    <!-- Max -->
+    <template class="neighbor-button" data-id="max" data-category="Net Neighbors" data-connects-to="onio">
+        <script type="application/json">
+        {
+            "href": "https://max8abug.neocities.org/",
+            "imgSrc": "https://max8abug.neocities.org/mebutton.gif",
+            "alt": "Max's site",
+            "title": "Take a walk in the Grove!"
+        }
+        </script>
+    </template>
+
+    <script>
+        (function() {
+            const corkBoard = document.getElementById('corkBoard');
+            const stringSvg = document.getElementById('stringSvg');
+            const templates = Array.from(document.querySelectorAll('template.neighbor-button'));
+            const buttonElements = {};
+            const pinElements = {};
+
+            corkBoard.style.transformOrigin = '0 0';
+
+            function hashStringToUint32(str) {
+                let h = 2166136261;
+                for (let i = 0; i < str.length; i++) {
+                    h ^= str.charCodeAt(i);
+                    h = Math.imul(h, 16777619);
+                }
+                return h >>> 0;
+            }
+
+            function mulberry32(seed) {
+                let a = seed >>> 0;
+                return function() {
+                    a |= 0;
+                    a = (a + 0x6D2B79F5) | 0;
+                    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+                    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+                };
+            }
+
+            function seededRandomForId(id) {
+                return mulberry32(hashStringToUint32(String(id || '')));
+            }
+
+            const layoutMode = (new URLSearchParams(window.location.search).get('layout') || 'graph').toLowerCase();
+
+            function randomSourceForTemplate(id) {
+                if (layoutMode === 'graph' || layoutMode === 'deterministic' || layoutMode === 'stable' || layoutMode === 'seeded') {
+                    return seededRandomForId(id);
+                }
+                return Math.random;
+            }
+
+            const knownTemplateIds = new Set();
+            templates.forEach((template) => {
+                const id = template.dataset.id;
+                if (!id) {
+                    console.warn('[neighbors] Template missing data-id; skipping', template);
+                    return;
+                }
+                if (knownTemplateIds.has(id)) {
+                    console.warn(`[neighbors] Duplicate data-id "${id}" found. Only the first occurrence will be used.`);
+                    return;
+                }
+                knownTemplateIds.add(id);
+            });
+
+            // ═══════════════════════════════════════════════════════════════
+            // DYNAMIC BOARD SIZING - always bigger than viewport
+            // ═══════════════════════════════════════════════════════════════
+            function sizeBoardToViewport(currentZoom) {
+                const z = currentZoom || 1;
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                // Board must be large enough that board * zoom >= viewport (fills screen)
+                // Add 50% extra so panning has room; never smaller than fixed minimums
+                const bw = Math.max((vw / z) * 1.5, 1200 / z, 1200);
+                const bh = Math.max((vh / z) * 1.5, 900 / z, 900);
+                corkBoard.style.width = bw + 'px';
+                corkBoard.style.height = bh + 'px';
+                return { bw, bh };
+            }
+            sizeBoardToViewport(1);
+
+            // ═══════════════════════════════════════════════════════════════
+            // RANDOM POSITIONING for buttons without explicit coordinates
+            // Adjust SCATTER_RADIUS to control how far buttons spread from center
+            // ═══════════════════════════════════════════════════════════════
+            const SPACING_MULT = 1.2;
+            const BUTTON_SPACING = 10 * SPACING_MULT;
+            const BOUNDS_MIN = 10;
+            const BOUNDS_MAX = 90;
+
+            function clamp(n, min, max) {
+                return Math.max(min, Math.min(max, n));
+            }
+
+            function getRandomRotation(rand) {
+                return (rand() - 0.5) * 60; // -30 to +30 degrees
+            }
+
+            function parseFiniteNumberOrUndefined(value) {
+                const n = parseFloat(value);
+                return Number.isFinite(n) ? n : undefined;
+            }
+
+            function createSpatialHash(cellSize) {
+                const buckets = new Map();
+                function key(cx, cy) {
+                    return `${cx},${cy}`;
+                }
+                function cellFor(x, y) {
+                    return { cx: Math.floor(x / cellSize), cy: Math.floor(y / cellSize) };
+                }
+                function add(node) {
+                    const { cx, cy } = cellFor(node.x, node.y);
+                    const k = key(cx, cy);
+                    const arr = buckets.get(k);
+                    if (arr) arr.push(node);
+                    else buckets.set(k, [node]);
+                }
+                function nearby(x, y) {
+                    const { cx, cy } = cellFor(x, y);
+                    const out = [];
+                    for (let oy = -1; oy <= 1; oy++) {
+                        for (let ox = -1; ox <= 1; ox++) {
+                            const arr = buckets.get(key(cx + ox, cy + oy));
+                            if (arr) out.push(...arr);
+                        }
+                    }
+                    return out;
+                }
+                return { add, nearby };
+            }
+
+            function applyLocks(node, pos) {
+                if (node.lockX !== undefined) pos.x = node.lockX;
+                if (node.lockY !== undefined) pos.y = node.lockY;
+                pos.x = clamp(pos.x, BOUNDS_MIN, BOUNDS_MAX);
+                pos.y = clamp(pos.y, BOUNDS_MIN, BOUNDS_MAX);
+                return pos;
+            }
+
+            function moveNode(node, dx, dy) {
+                if (node.fixed) return;
+                if (node.lockX !== undefined) dx = 0;
+                if (node.lockY !== undefined) dy = 0;
+                node.x = clamp(node.x + dx, BOUNDS_MIN, BOUNDS_MAX);
+                node.y = clamp(node.y + dy, BOUNDS_MIN, BOUNDS_MAX);
+                if (node.lockX !== undefined) node.x = node.lockX;
+                if (node.lockY !== undefined) node.y = node.lockY;
+            }
+
+            function avgPositions(nodes) {
+                if (!nodes.length) return { x: 50, y: 50 };
+                let sx = 0;
+                let sy = 0;
+                for (const n of nodes) {
+                    sx += n.x;
+                    sy += n.y;
+                }
+                return { x: sx / nodes.length, y: sy / nodes.length };
+            }
+
+            function buildNodesFromTemplates() {
+                const nodesById = new Map();
+                templates.forEach((template) => {
+                    const id = template.dataset.id;
+                    if (!id || !knownTemplateIds.has(id)) return;
+
+                    const jsonScript = template.content.querySelector('script[type="application/json"]');
+                    if (!jsonScript) {
+                        console.warn(`[neighbors] Missing JSON script block for "${id}"; skipping`);
+                        return;
+                    }
+
+                    let data;
+                    try {
+                        data = JSON.parse(jsonScript.textContent);
+                    } catch (err) {
+                        console.warn(`[neighbors] Invalid JSON for "${id}"; skipping`, err);
+                        return;
+                    }
+
+                    if (!data || !data.href || !data.imgSrc) {
+                        console.warn(`[neighbors] Missing required JSON fields (href/imgSrc) for "${id}"; skipping`);
+                        return;
+                    }
+
+                    const connectsTo = template.dataset.connectsTo
+                        ? template.dataset.connectsTo.split(',').map(s => s.trim()).filter(Boolean)
+                        : [];
+                    const normalizedConnectsTo = Array.from(new Set(connectsTo)).filter(targetId => targetId !== id);
+                    const rand = randomSourceForTemplate(id);
+
+                    const lockX = template.dataset.x !== undefined ? parseFiniteNumberOrUndefined(template.dataset.x) : undefined;
+                    const lockY = template.dataset.y !== undefined ? parseFiniteNumberOrUndefined(template.dataset.y) : undefined;
+                    const fixed = lockX !== undefined && lockY !== undefined;
+                    const rotation = fixed ? (parseFloat(template.dataset.rotation) || 0) : getRandomRotation(rand);
+                    const isHub = template.dataset.isHub === 'true';
+
+                    nodesById.set(id, {
+                        id,
+                        data,
+                        isHub,
+                        connectsTo: normalizedConnectsTo,
+                        lockX,
+                        lockY,
+                        fixed,
+                        x: lockX !== undefined ? lockX : (BOUNDS_MIN + rand() * (BOUNDS_MAX - BOUNDS_MIN)),
+                        y: lockY !== undefined ? lockY : (BOUNDS_MIN + rand() * (BOUNDS_MAX - BOUNDS_MIN)),
+                        rotation,
+                        rand
+                    });
+                });
+
+                for (const node of nodesById.values()) {
+                    node.connectsTo = node.connectsTo.filter((tid) => nodesById.has(tid));
+                }
+
+                return nodesById;
+            }
+
+            function buildAdjacency(nodesById) {
+                const adj = new Map();
+                for (const id of nodesById.keys()) adj.set(id, new Set());
+                for (const node of nodesById.values()) {
+                    for (const tid of node.connectsTo) {
+                        if (!adj.has(tid)) continue;
+                        adj.get(node.id).add(tid);
+                        adj.get(tid).add(node.id);
+                    }
+                }
+                return adj;
+            }
+
+            function layoutGraph(nodesById) {
+                const adj = buildAdjacency(nodesById);
+                const hubs = Array.from(nodesById.values()).filter((n) => n.isHub);
+                const hubIdsSorted = hubs.map((h) => h.id).sort();
+
+                if (hubs.length === 1) {
+                    const h = nodesById.get(hubIdsSorted[0]);
+                    if (h && !h.fixed) {
+                        const pos = applyLocks(h, { x: 50, y: 50 });
+                        h.x = pos.x;
+                        h.y = pos.y;
+                    }
+                } else if (hubs.length > 1) {
+                    const r = clamp(16 + Math.log(hubs.length + 1) * 6, 16, 28);
+                    for (let i = 0; i < hubIdsSorted.length; i++) {
+                        const h = nodesById.get(hubIdsSorted[i]);
+                        if (!h || h.fixed) continue;
+                        const angle = (Math.PI * 2 * i) / hubIdsSorted.length;
+                        const pos = applyLocks(h, { x: 50 + Math.cos(angle) * r, y: 50 + Math.sin(angle) * r });
+                        h.x = pos.x;
+                        h.y = pos.y;
+                    }
+                }
+
+                const connectedHubCount = new Map();
+                for (const node of nodesById.values()) {
+                    const set = adj.get(node.id);
+                    let count = 0;
+                    for (const nid of set) {
+                        const n = nodesById.get(nid);
+                        if (n && n.isHub) count++;
+                    }
+                    connectedHubCount.set(node.id, count);
+                }
+
+                const placed = new Set();
+                for (const node of nodesById.values()) {
+                    if (node.fixed) placed.add(node.id);
+                    if (node.isHub) placed.add(node.id);
+                }
+
+                const orbitBase = 14 * SPACING_MULT;
+                const orbitStep = 10 * SPACING_MULT;
+                const perRing = 8;
+
+                for (const hubId of hubIdsSorted) {
+                    const hub = nodesById.get(hubId);
+                    if (!hub) continue;
+                    const sats = [];
+                    for (const nid of adj.get(hubId)) {
+                        const n = nodesById.get(nid);
+                        if (!n || n.isHub) continue;
+                        if (n.fixed) continue;
+                        if (connectedHubCount.get(n.id) !== 1) continue;
+                        sats.push(n);
+                    }
+                    sats.sort((a, b) => a.id.localeCompare(b.id));
+
+                    const hubAngleOffset = hub.rand() * Math.PI * 2;
+                    for (let i = 0; i < sats.length; i++) {
+                        const sat = sats[i];
+                        const ring = Math.floor(i / perRing);
+                        const slot = i % perRing;
+                        const radius = orbitBase + ring * orbitStep;
+                        const angle = hubAngleOffset + (Math.PI * 2 * slot) / perRing;
+                        const pos = applyLocks(sat, { x: hub.x + Math.cos(angle) * radius, y: hub.y + Math.sin(angle) * radius });
+                        sat.x = pos.x;
+                        sat.y = pos.y;
+                        placed.add(sat.id);
+                    }
+                }
+
+                const multiHubNodes = [];
+                for (const node of nodesById.values()) {
+                    if (node.isHub || node.fixed) continue;
+                    if ((connectedHubCount.get(node.id) || 0) >= 2) multiHubNodes.push(node);
+                }
+                multiHubNodes.sort((a, b) => a.id.localeCompare(b.id));
+                for (const node of multiHubNodes) {
+                    const hubNeighbors = Array.from(adj.get(node.id))
+                        .map((nid) => nodesById.get(nid))
+                        .filter((n) => n && n.isHub);
+                    const center = avgPositions(hubNeighbors);
+                    let jx = 0;
+                    let jy = 0;
+                    if (hubNeighbors.length >= 2) {
+                        const a = hubNeighbors[0];
+                        const b = hubNeighbors[1];
+                        const vx = b.x - a.x;
+                        const vy = b.y - a.y;
+                        const len = Math.sqrt(vx * vx + vy * vy) || 1;
+                        const px = -vy / len;
+                        const py = vx / len;
+                        const mag = (node.rand() - 0.5) * 12;
+                        jx = px * mag;
+                        jy = py * mag;
+                    } else {
+                        const angle = node.rand() * Math.PI * 2;
+                        const mag = (node.rand() - 0.5) * 8;
+                        jx = Math.cos(angle) * mag;
+                        jy = Math.sin(angle) * mag;
+                    }
+                    const pos = applyLocks(node, { x: center.x + jx, y: center.y + jy });
+                    node.x = pos.x;
+                    node.y = pos.y;
+                    placed.add(node.id);
+                }
+
+                const queue = [];
+                for (const id of placed) queue.push(id);
+
+                while (queue.length) {
+                    const id = queue.shift();
+                    const anchor = nodesById.get(id);
+                    if (!anchor) continue;
+                    const neighbors = Array.from(adj.get(id)).map((nid) => nodesById.get(nid)).filter(Boolean);
+                    neighbors.sort((a, b) => a.id.localeCompare(b.id));
+                    for (const n of neighbors) {
+                        if (n.isHub || n.fixed) continue;
+                        if (placed.has(n.id)) continue;
+                        if ((connectedHubCount.get(n.id) || 0) >= 1) continue;
+                        const angle = seededRandomForId(anchor.id + '->' + n.id)() * Math.PI * 2;
+                        const r = (12 * SPACING_MULT) + seededRandomForId(n.id + '|' + anchor.id)() * (6 * SPACING_MULT);
+                        const pos = applyLocks(n, { x: anchor.x + Math.cos(angle) * r, y: anchor.y + Math.sin(angle) * r });
+                        n.x = pos.x;
+                        n.y = pos.y;
+                        placed.add(n.id);
+                        queue.push(n.id);
+                    }
+                }
+
+                const unplaced = Array.from(nodesById.values()).filter((n) => !placed.has(n.id) && !n.fixed && !n.isHub);
+                unplaced.sort((a, b) => a.id.localeCompare(b.id));
+                if (unplaced.length) {
+                    const step = BUTTON_SPACING;
+                    let gx = BOUNDS_MIN;
+                    let gy = BOUNDS_MIN;
+                    for (const n of unplaced) {
+                        const pos = applyLocks(n, { x: gx, y: gy });
+                        n.x = pos.x;
+                        n.y = pos.y;
+                        placed.add(n.id);
+                        gx += step;
+                        if (gx > BOUNDS_MAX) {
+                            gx = BOUNDS_MIN;
+                            gy += step;
+                            if (gy > BOUNDS_MAX) gy = BOUNDS_MIN;
+                        }
+                    }
+                }
+
+                for (let iter = 0; iter < 40; iter++) {
+                    const hash = createSpatialHash(BUTTON_SPACING);
+                    const nodes = Array.from(nodesById.values());
+                    for (const n of nodes) hash.add(n);
+
+                    for (const n of nodes) {
+                        if (n.fixed) continue;
+                        const near = hash.nearby(n.x, n.y);
+                        let rx = 0;
+                        let ry = 0;
+                        for (const o of near) {
+                            if (o === n) continue;
+                            const dx = n.x - o.x;
+                            const dy = n.y - o.y;
+                            const d2 = dx * dx + dy * dy;
+                            if (d2 <= 0) continue;
+                            const d = Math.sqrt(d2);
+                            const minD = BUTTON_SPACING;
+                            if (d >= minD) continue;
+                            const push = (minD - d) / minD;
+                            rx += (dx / d) * push;
+                            ry += (dy / d) * push;
+                        }
+                        moveNode(n, rx * 0.7, ry * 0.7);
+                    }
+
+                    for (const n of nodes) {
+                        if (n.fixed) continue;
+                        const neighbors = Array.from(adj.get(n.id)).map((nid) => nodesById.get(nid)).filter(Boolean);
+                        if (!neighbors.length) continue;
+                        const target = avgPositions(neighbors);
+                        moveNode(n, (target.x - n.x) * 0.015, (target.y - n.y) * 0.015);
+                    }
+                }
+            }
+
+            const nodesById = buildNodesFromTemplates();
+            const adjacency = buildAdjacency(nodesById);
+            if (layoutMode === 'random') {
+                for (const node of nodesById.values()) {
+                    if (node.fixed) continue;
+                    const rand = node.rand;
+                    const pos = applyLocks(node, { x: 50 + (rand() - 0.5) * 50, y: 50 + (rand() - 0.5) * 50 });
+                    node.x = pos.x;
+                    node.y = pos.y;
+                }
+            } else {
+                layoutGraph(nodesById);
+            }
+
+            const boardFragment = document.createDocumentFragment();
+            for (const node of nodesById.values()) {
+                const card = document.createElement('div');
+                card.className = 'button-card';
+                card.style.left = `${node.x}%`;
+                card.style.top = `${node.y}%`;
+                card.style.transform = `translate(-50%, -50%) rotate(${node.rotation}deg)`;
+                card.dataset.id = node.id;
+                card.dataset.connectsTo = node.connectsTo.join(',');
+
+                card.innerHTML = `
+                    <div class="pin"></div>
+                    <a href="${node.data.href}" target="_blank" rel="noopener noreferrer" title="${node.data.title}">
+                        <div class="button-frame">
+                            <img src="${node.data.imgSrc}" alt="${node.data.alt}" width="88" height="31">
+                        </div>
+                    </a>
+                `;
+
+                boardFragment.appendChild(card);
+                buttonElements[node.id] = card;
+                pinElements[node.id] = card.querySelector('.pin');
+            }
+
+            corkBoard.appendChild(boardFragment);
+
+            function edgeKey(a, b) {
+                if (a === b) return `${a}|${b}`;
+                return a < b ? `${a}|${b}` : `${b}|${a}`;
+            }
+
+            function findPathBfs(startId, goalId) {
+                if (!startId || !goalId) return null;
+                if (startId === goalId) return [startId];
+                const visited = new Set([startId]);
+                const prev = new Map();
+                const queue = [startId];
+                while (queue.length) {
+                    const cur = queue.shift();
+                    const neighbors = adjacency.get(cur);
+                    if (!neighbors) continue;
+                    for (const nxt of neighbors) {
+                        if (visited.has(nxt)) continue;
+                        visited.add(nxt);
+                        prev.set(nxt, cur);
+                        if (nxt === goalId) {
+                            const path = [goalId];
+                            let p = goalId;
+                            while (prev.has(p)) {
+                                p = prev.get(p);
+                                path.push(p);
+                                if (p === startId) break;
+                            }
+                            path.reverse();
+                            return path[0] === startId ? path : null;
+                        }
+                        queue.push(nxt);
+                    }
+                }
+                return null;
+            }
+
+            let edgeElements = new Map();
+            let observedMode = null;
+            let lastObservedPinIds = new Set();
+            let lastObservedEdgeKeys = new Set();
+
+            function applyObserved(pinIds, edgeKeys) {
+                for (const id of lastObservedPinIds) {
+                    if (pinIds.has(id)) continue;
+                    const pin = pinElements[id];
+                    if (pin) pin.classList.remove('is-observed');
+                }
+                for (const id of pinIds) {
+                    const pin = pinElements[id];
+                    if (pin) pin.classList.add('is-observed');
+                }
+
+                for (const key of lastObservedEdgeKeys) {
+                    if (edgeKeys.has(key)) continue;
+                    const el = edgeElements.get(key);
+                    if (el) el.classList.remove('is-observed');
+                }
+                for (const key of edgeKeys) {
+                    const el = edgeElements.get(key);
+                    if (el) el.classList.add('is-observed');
+                }
+
+                lastObservedPinIds = new Set(pinIds);
+                lastObservedEdgeKeys = new Set(edgeKeys);
+            }
+
+            function updateObserved() {
+                if (!observedMode) {
+                    applyObserved(new Set(), new Set());
+                    return;
+                }
+
+                if (observedMode.type === 'edge') {
+                    const parts = String(observedMode.key || '').split('|');
+                    const a = parts[0];
+                    const b = parts[1];
+                    const pins = new Set([a, b]);
+                    const edges = new Set([observedMode.key]);
+                    applyObserved(pins, edges);
+                    return;
+                }
+
+                const hoveredId = observedMode.id;
+                const pins = new Set();
+                const edges = new Set();
+                if (hoveredId) pins.add(hoveredId);
+
+                const neighbors = adjacency.get(hoveredId);
+                if (neighbors) {
+                    for (const n of neighbors) pins.add(n);
+                }
+
+                const path = findPathBfs(hoveredId, 'kick');
+                if (path && path.length >= 2) {
+                    for (const id of path) pins.add(id);
+                    for (let i = 0; i < path.length - 1; i++) {
+                        edges.add(edgeKey(path[i], path[i + 1]));
+                    }
+                }
+
+                applyObserved(pins, edges);
+            }
+
+            function setObservedNode(id) {
+                observedMode = { type: 'node', id };
+                updateObserved();
+            }
+
+            function setObservedEdge(key) {
+                observedMode = { type: 'edge', key };
+                updateObserved();
+            }
+
+            function clearObserved() {
+                observedMode = null;
+                updateObserved();
+            }
+
+            for (const card of Object.values(buttonElements)) {
+                card.addEventListener('mouseenter', () => setObservedNode(card.dataset.id));
+                card.addEventListener('mouseleave', clearObserved);
+            }
+
+            // Draw strings connecting to actual pin positions
+            function drawStrings() {
+                const boardRect = corkBoard.getBoundingClientRect();
+                stringSvg.innerHTML = '';
+
+                edgeElements = new Map();
+                const drawn = new Set();
+
+                const invZoom = 1 / (zoom || 1);
+
+                Object.entries(buttonElements).forEach(([id, card]) => {
+                    const connectsTo = card.dataset.connectsTo ? card.dataset.connectsTo.split(',').filter(Boolean) : [];
+                    const pin = card.querySelector('.pin');
+                    if (!pin) return;
+                    const pinRect = pin.getBoundingClientRect();
+                    
+                    // Get center of this pin relative to board
+                    const x1 = (pinRect.left - boardRect.left + pinRect.width / 2) * invZoom;
+                    const y1 = (pinRect.top - boardRect.top + pinRect.height / 2) * invZoom;
+
+                    connectsTo.forEach(targetId => {
+                        if (targetId === id) return;
+                        const targetCard = buttonElements[targetId];
+                        if (!targetCard) return;
+
+                        const key = edgeKey(id, targetId);
+                        if (drawn.has(key)) return;
+                        drawn.add(key);
+
+                        const targetPin = targetCard.querySelector('.pin');
+                        if (!targetPin) return;
+                        const targetPinRect = targetPin.getBoundingClientRect();
+                        
+                        // Get center of target pin relative to board
+                        const x2 = (targetPinRect.left - boardRect.left + targetPinRect.width / 2) * invZoom;
+                        const y2 = (targetPinRect.top - boardRect.top + targetPinRect.height / 2) * invZoom;
+
+                        // Calculate sag based on distance
+                        const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+                        const sag = Math.min(dist * 0.1, 30);
+
+                        const midX = (x1 + x2) / 2;
+                        const midY = (y1 + y2) / 2 + sag;
+
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('d', `M ${x1} ${y1} Q ${midX} ${midY} ${x2} ${y2}`);
+                        path.setAttribute('class', 'string-line');
+                        path.dataset.edgeKey = key;
+                        path.dataset.from = id;
+                        path.dataset.to = targetId;
+                        path.addEventListener('mouseenter', () => setObservedEdge(key));
+                        path.addEventListener('mouseleave', clearObserved);
+                        stringSvg.appendChild(path);
+                        edgeElements.set(key, path);
+                    });
+                });
+
+                updateObserved();
+            }
+
+            // Draw strings on load and resize
+            setTimeout(drawStrings, 100);
+            window.addEventListener('resize', drawStrings);
+
+            // ═══════════════════════════════════════════════════════════════
+            // DRAG TO PAN (mouse + touch)
+            // ═══════════════════════════════════════════════════════════════
+            const viewport = document.getElementById('boardViewport');
+            let isDragging = false;
+            let startX, startY, scrollLeft, scrollTop;
+
+            let zoom = 1.0;
+            const zoomSlider = document.getElementById('zoomSlider');
+            const zoomLabel = document.getElementById('zoomLabel');
+
+            function sliderToZoom(val) {
+                // slider 0-200, 100 = 1.0 zoom; map linearly 0->0.01, 200->2.0
+                return Math.max(0.01, val / 100);
+            }
+
+            function zoomToSlider(z) {
+                return Math.round(z * 100);
+            }
+
+            function setZoom(nextZoom) {
+                zoom = Math.max(0.01, Math.min(2.0, nextZoom));
+                sizeBoardToViewport(zoom);
+
+                const vw = viewport.clientWidth;
+                const vh = viewport.clientHeight;
+                const bwScaled = corkBoard.offsetWidth * zoom;
+                const bhScaled = corkBoard.offsetHeight * zoom;
+
+                scrollLeft = Math.max(0, Math.min(Math.max(0, bwScaled - vw), scrollLeft));
+                scrollTop = Math.max(0, Math.min(Math.max(0, bhScaled - vh), scrollTop));
+                zoomSlider.value = zoomToSlider(zoom);
+                zoomLabel.textContent = Math.round(zoom * 100) + '%';
+                applyBoardTransform();
+                drawStrings();
+            }
+
+            function applyBoardTransform() {
+                corkBoard.style.transform = `translate(${-scrollLeft}px, ${-scrollTop}px) scale(${zoom})`;
+            }
+
+            // Center the board initially and resize board on window resize
+            function centerBoard() {
+                sizeBoardToViewport(zoom);
+                const vw = viewport.clientWidth;
+                const vh = viewport.clientHeight;
+                const bwScaled = corkBoard.offsetWidth * zoom;
+                const bhScaled = corkBoard.offsetHeight * zoom;
+                scrollLeft = Math.max(0, (bwScaled - vw) / 2);
+                scrollTop = Math.max(0, (bhScaled - vh) / 2);
+                applyBoardTransform();
+                drawStrings();
+            }
+            centerBoard();
+            window.addEventListener('resize', centerBoard);
+
+            function startDrag(e) {
+                // Don't drag if clicking on interactive elements or button cards
+                if (e.target.closest('a, button, textarea, details, .back-link, .copy-section, .button-card')) return;
+                
+                isDragging = true;
+                viewport.classList.add('is-dragging');
+                
+                const point = e.touches ? e.touches[0] : e;
+                startX = point.clientX;
+                startY = point.clientY;
+            }
+
+            function doDrag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const point = e.touches ? e.touches[0] : e;
+                const dx = point.clientX - startX;
+                const dy = point.clientY - startY;
+                
+                startX = point.clientX;
+                startY = point.clientY;
+                
+                // Update scroll position with bounds
+                const vw = viewport.clientWidth;
+                const vh = viewport.clientHeight;
+                const bw = corkBoard.offsetWidth * zoom;
+                const bh = corkBoard.offsetHeight * zoom;
+                
+                scrollLeft = Math.max(0, Math.min(bw - vw, scrollLeft - dx));
+                scrollTop = Math.max(0, Math.min(bh - vh, scrollTop - dy));
+                
+                applyBoardTransform();
+            }
+
+            function endDrag() {
+                if (isDragging) {
+                    isDragging = false;
+                    viewport.classList.remove('is-dragging');
+                    drawStrings();
+                }
+            }
+
+            // Mouse events
+            viewport.addEventListener('mousedown', startDrag);
+            window.addEventListener('mousemove', doDrag);
+            window.addEventListener('mouseup', endDrag);
+
+            // Touch events
+            viewport.addEventListener('touchstart', startDrag, { passive: true });
+            viewport.addEventListener('touchmove', doDrag, { passive: false });
+            viewport.addEventListener('touchend', endDrag);
+
+            zoomSlider.addEventListener('input', () => {
+                setZoom(sliderToZoom(Number(zoomSlider.value)));
+            });
+
+            // ═══════════════════════════════════════════════════════════════
+            // BUTTON CARD DRAGGING
+            // Dragging a card moves it on the board.
+            // Orbiters (cards that connect to ONLY the dragged card) move with it.
+            // ═══════════════════════════════════════════════════════════════
+
+            function getOrbiters(draggedId) {
+                // An orbiter connects solely to the dragged card (its only connection target is draggedId)
+                const orbiters = [];
+                for (const [id, card] of Object.entries(buttonElements)) {
+                    if (id === draggedId) continue;
+                    const targets = card.dataset.connectsTo
+                        ? card.dataset.connectsTo.split(',').filter(Boolean)
+                        : [];
+                    if (targets.length === 1 && targets[0] === draggedId) {
+                        orbiters.push(id);
+                    }
+                }
+                return orbiters;
+            }
+
+            let cardDrag = null;
+
+            function cardPointerToBoard(clientX, clientY) {
+                // Convert a client-space point to board percentage coordinates
+                const boardRect = corkBoard.getBoundingClientRect();
+                const bw = corkBoard.offsetWidth;
+                const bh = corkBoard.offsetHeight;
+                const x = ((clientX - boardRect.left) / zoom / bw) * 100;
+                const y = ((clientY - boardRect.top) / zoom / bh) * 100;
+                return { x, y };
+            }
+
+            function onCardMouseDown(e) {
+                // Only start card drag on left button, not on the link itself
+                if (e.button !== 0) return;
+                if (e.target.closest('a')) return;
+                e.stopPropagation();
+
+                const card = e.currentTarget;
+                const draggedId = card.dataset.id;
+                const orbiters = getOrbiters(draggedId);
+                const startBoard = cardPointerToBoard(e.clientX, e.clientY);
+
+                // Record initial positions of card and orbiters
+                const initialPositions = {};
+                const allIds = [draggedId, ...orbiters];
+                for (const id of allIds) {
+                    const el = buttonElements[id];
+                    if (!el) continue;
+                    initialPositions[id] = {
+                        x: parseFloat(el.style.left),
+                        y: parseFloat(el.style.top)
+                    };
+                }
+
+                cardDrag = { draggedId, orbiters, startBoard, initialPositions, moved: false };
+                card.classList.add('is-card-dragging');
+            }
+
+            function onCardMouseMove(e) {
+                if (!cardDrag) return;
+                const cur = cardPointerToBoard(e.clientX, e.clientY);
+                const dx = cur.x - cardDrag.startBoard.x;
+                const dy = cur.y - cardDrag.startBoard.y;
+
+                if (!cardDrag.moved && (Math.abs(dx) > 0.3 || Math.abs(dy) > 0.3)) {
+                    cardDrag.moved = true;
+                }
+
+                if (!cardDrag.moved) return;
+
+                const allIds = [cardDrag.draggedId, ...cardDrag.orbiters];
+                for (const id of allIds) {
+                    const el = buttonElements[id];
+                    if (!el) continue;
+                    const init = cardDrag.initialPositions[id];
+                    el.style.left = `${clamp(init.x + dx, 0, 100)}%`;
+                    el.style.top = `${clamp(init.y + dy, 0, 100)}%`;
+                }
+
+                drawStrings();
+            }
+
+            function onCardMouseUp(e) {
+                if (!cardDrag) return;
+                const card = buttonElements[cardDrag.draggedId];
+                if (card) card.classList.remove('is-card-dragging');
+                if (cardDrag.moved) {
+                    // Prevent the link click that would fire after mouseup
+                    const stopClick = (ev) => {
+                        ev.stopPropagation();
+                        ev.preventDefault();
+                        card.removeEventListener('click', stopClick, true);
+                    };
+                    if (card) card.addEventListener('click', stopClick, true);
+                }
+                cardDrag = null;
+                drawStrings();
+            }
+
+            // Wire card drag events
+            for (const card of Object.values(buttonElements)) {
+                card.addEventListener('mousedown', onCardMouseDown);
+            }
+            window.addEventListener('mousemove', onCardMouseMove);
+            window.addEventListener('mouseup', onCardMouseUp);
+
+            // ═══════════════════════════════════════════════════════════════
+            // EZ READ MODE MODAL
+            // ═══════════════════════════════════════════════════════════════
+            const ezReadBtn = document.getElementById('ezReadBtn');
+            const ezModal = document.getElementById('ezModal');
+            const ezModalClose = document.getElementById('ezModalClose');
+            const ezGrid = document.getElementById('ezGrid');
+
+            function normalizeCategoryLabel(label) {
+                const trimmed = String(label || '').trim();
+                if (!trimmed) return '';
+                const upper = trimmed.toUpperCase();
+                if (upper === 'MY PEEPS') return 'MY PEEPS';
+                if (upper === 'NET NEIGHBORS') return 'Net Neighbors';
+                if (upper === 'QOOL') return 'QOOL';
+                return trimmed;
+            }
+
+            function parseCategoriesFromTemplate(template) {
+                const raw = template.dataset.category;
+                if (!raw) return ['Net Neighbors'];
+                const cats = raw
+                    .split(',')
+                    .map(s => normalizeCategoryLabel(s))
+                    .map(s => String(s || '').trim())
+                    .filter(Boolean);
+                return cats.length ? Array.from(new Set(cats)) : ['Net Neighbors'];
+            }
+
+            const preferredCategoryOrder = ['MY PEEPS', 'Net Neighbors', 'QOOL'];
+            const usedCategorySet = new Set(preferredCategoryOrder);
+            const itemsByCategory = new Map(preferredCategoryOrder.map((c) => [c, []]));
+
+            templates.forEach(template => {
+                const id = template.dataset.id;
+                if (!id || !knownTemplateIds.has(id)) return;
+
+                const jsonScript = template.content.querySelector('script[type="application/json"]');
+                if (!jsonScript) return;
+
+                let data;
+                try {
+                    data = JSON.parse(jsonScript.textContent);
+                } catch {
+                    return;
+                }
+                if (!data || !data.href || !data.imgSrc) return;
+
+                const categories = parseCategoriesFromTemplate(template);
+                for (const category of categories) {
+                    if (!usedCategorySet.has(category)) {
+                        usedCategorySet.add(category);
+                        itemsByCategory.set(category, []);
+                    }
+                    itemsByCategory.get(category).push({
+                        id,
+                        href: data.href,
+                        imgSrc: data.imgSrc,
+                        alt: data.alt,
+                        title: data.title
+                    });
+                }
+            });
+
+            const categoryOrder = [
+                ...preferredCategoryOrder,
+                ...Array.from(itemsByCategory.keys()).filter((c) => !preferredCategoryOrder.includes(c))
+            ];
+
+            ezGrid.innerHTML = '';
+            for (const category of categoryOrder) {
+                const section = document.createElement('section');
+
+                const title = document.createElement('h3');
+                title.className = 'ez-category-title';
+                title.textContent = category;
+
+                const grid = document.createElement('div');
+                grid.className = 'ez-category-grid';
+
+                const items = itemsByCategory.get(category) || [];
+                for (const itemData of items) {
+                    const item = document.createElement('a');
+                    item.className = 'ez-grid-item';
+                    item.href = itemData.href;
+                    item.target = '_blank';
+                    item.rel = 'noopener noreferrer';
+                    item.title = itemData.title;
+                    item.innerHTML = `<img src="${itemData.imgSrc}" alt="${itemData.alt}" width="88" height="31">`;
+                    grid.appendChild(item);
+                }
+
+                section.appendChild(title);
+                section.appendChild(grid);
+                ezGrid.appendChild(section);
+            }
+
+            ezReadBtn.addEventListener('click', () => {
+                ezModal.classList.add('is-open');
+            });
+
+            ezModalClose.addEventListener('click', () => {
+                ezModal.classList.remove('is-open');
+            });
+
+            ezModal.addEventListener('click', (e) => {
+                if (e.target === ezModal) {
+                    ezModal.classList.remove('is-open');
+                }
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    ezModal.classList.remove('is-open');
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

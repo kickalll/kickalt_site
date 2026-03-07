@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chattable Example</title>
+    
+    <style>
+      body {
+        background-color: #8B0000;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+      }
+      #chattable, #chattable2 {
+        display: block;
+        margin: 0;
+        width: 48%;
+        height: 100vh;
+        min-width: 100px;
+        max-width: 50vw;
+       
+        min-height: 100vh;
+      }
+    </style>
+    <script>
+      window.addEventListener("load", function(){
+        const css = `body { background: #8B0000; color: white; }`; // Custom CSS for chat styling
+        document.getElementById("chattable").contentWindow.postMessage(css, "*");
+        document.getElementById("chattable2").contentWindow.postMessage(css, "*");
+      });
+    </script>
+  </head>
+  <body>
+   <iframe src="https://iframe.chat/embed/?chat=kuroi_general" id="chattable" frameborder="0"></iframe>
+   <iframe src="https://beta.iframe.chat/embed/alternate/?chat=57918527" id="chattable2" frameborder="0"></iframe>
+  </body>
+</html>

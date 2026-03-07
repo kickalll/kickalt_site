@@ -263,8 +263,20 @@
         .modal-iframe-frame {
             width: 100%;
             height: 450px;
+            min-height: 100px;
             border: 0;
             background: transparent;
+            display: block;
+        }
+
+        .entity-popup-window.modal-iframe {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .entity-popup-window.modal-iframe .modal-iframe-frame {
+            flex: 1;
+            height: 0;
         }
 
         .entity-popup-window {
@@ -273,6 +285,10 @@
             pointer-events: auto;
             will-change: transform;
             transform: translate(0, 0);
+            resize: both;
+            overflow: hidden;
+            min-width: 220px;
+            min-height: 120px;
         }
 
         .entity-popup-window .modal-header {
@@ -289,8 +305,62 @@
             cursor: grabbing;
         }
 
-        .entity-popup-window.is-dragging iframe {
+        .entity-popup-window.is-dragging iframe,
+        .entity-popup-window.is-resizing iframe {
             pointer-events: none;
+        }
+
+        #fishSpeechTooltip {
+            position: fixed;
+            z-index: 500;
+            pointer-events: none;
+            white-space: pre;
+            font-family: "Space Mono", "Courier New", Courier, monospace;
+            font-size: clamp(10px, 1.2vw, 13px);
+            color: #e4f1ff;
+            background: rgba(5, 5, 5, 0.88);
+            border: 1px solid rgba(74, 158, 255, 0.45);
+            border-radius: 6px;
+            padding: 4px 10px;
+            transform: translateX(-50%);
+            display: none;
+            width: max-content;
+            max-width: calc(100vw - 24px);
+            text-align: center;
+            line-height: 1.4;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes unlockToastRise {
+            0%   { transform: translateX(-50%) translateY(0);      opacity: 1; }
+            15%  { transform: translateX(-50%) translateY(-8px);   opacity: 1; }
+            75%  { transform: translateX(-50%) translateY(-38vh);  opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-55vh);  opacity: 0; }
+        }
+
+        #unlockToast {
+            position: fixed;
+            bottom: calc(24px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%) translateY(0);
+            z-index: 9500;
+            pointer-events: none;
+            background: rgba(5, 5, 5, 0.92);
+            border: 1px solid rgba(74, 158, 255, 0.55);
+            border-radius: 12px;
+            padding: 14px 24px;
+            text-align: center;
+            color: #e4f1ff;
+            font-family: "Space Mono", "Courier New", Courier, monospace;
+            font-size: clamp(11px, 1.4vw, 15px);
+            display: none;
+            white-space: nowrap;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        #unlockToast.is-animating {
+            display: block;
+            animation: unlockToastRise 3.2s ease-in forwards;
         }
     </style>
 </head>
@@ -319,6 +389,15 @@
             <li><a href="mealprep.html" target="_blank" rel="noopener noreferrer">meal prep</a></li>
             <li><a href="neighbors.html" target="_blank" rel="noopener noreferrer">neighbors</a></li>
         </ul>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="fishGameModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="fish game info">
+        <div class="modal-header">
+            <div class="modal-title">DA FISH GAME</div>
+        </div>
+        <div>lolzor</div>
     </div>
 </div>
 
@@ -351,19 +430,19 @@
 </script>
 </template>
 
-<template class="entity" data-type="fish" data-speed-ms="150">
+<template class="entity" data-type="fish" data-speed-ms="150" data-special-id="neocities">
 <script type="application/json">
 {
   "artLeft": [
     "  ;,//;,    ,;/",
-    " oNEO PAGE;///",
-    ">::::::::;;\\\\\\",
+    " oNEOCITIES///",
+    ">::PROFILE\\\\\\",
     "  ''\\\\\\\\\\\\' ';\\"
   ],
   "artRight": [
     "\\;,    ,;//;,  ",
-    "\\\\\\;NEO PAGEo ",
-    "//////;;::::::::>",
+    "\\\\\\;;NEOCITIESo ",
+    "//////PROFILE::<",
     "//;' '\\\\\\\\\\\\''  "
   ],
   "linkUrl": "https://neocities.org/site/kickalt",
@@ -384,8 +463,8 @@
   ],
   "artRight": [
     "\\;,    ,;//;,  ",
-    "\\\\\\;;:::::::o ",
-    "//////;;::::::::>",
+    "\\\\\\;;:::::::::o ",
+    "//////;;:::::::<",
     "//;' '\\\\\\\\\\\\''  "
   ]
 }
@@ -403,8 +482,8 @@
   ],
   "artRight": [
     "\\;,    ,;//;,  ",
-    "\\\\\\;;:::::::o ",
-    "//////;;::::::::>",
+    "\\\\\\;;:::::::::o ",
+    "//////;;:::::::<",
     "//;' '\\\\\\\\\\\\''  "
   ]
 }
@@ -422,8 +501,8 @@
   ],
   "artRight": [
     "\\;,    ,;//;,  ",
-    "\\\\\\;;:::::::o ",
-    "//////;;::::::::>",
+    "\\\\\\;;:::::::::o ",
+    "//////;;:::::::<",
     "//;' '\\\\\\\\\\\\''  "
   ]
 }
@@ -433,7 +512,7 @@
 
 
 <!-- this is my jelly-->
-<template class="entity" data-type="fish" data-speed-ms="700">
+<template class="entity" data-type="jelly" data-speed-ms="700">
 <script type="application/json">
 {
   "artLeft": [
@@ -459,7 +538,7 @@
     "   | | |   | | |"
   ],
   "popupIframeUrl": "mealprep.html",
-  "popupTitle": "SAY HI :3",
+  "popupTitle": "A log of my meal preps",
   "shadowColor": "rgba(255, 25, 243, 0.705)",
   "shadowHoverColor": "rgba(0, 244, 252, 0.795)"
 }
@@ -467,7 +546,7 @@
 </template>
 
 <!-- this is my jelly-->
-<template class="entity" data-type="fish" data-speed-ms="700">
+<template class="entity" data-type="jelly" data-speed-ms="700">
 <script type="application/json">
 {
   "artLeft": [
@@ -501,7 +580,7 @@
 </template>
 
 <!-- this is my chat jelly-->
-<template class="entity" data-type="fish" data-speed-ms="700">
+<template class="entity" data-type="jelly" data-speed-ms="700">
 <script type="application/json">
 {
   "artLeft": [
@@ -532,7 +611,7 @@
 </script>
 </template>
 
-<!-- this is my welcome submarine-->
+<!-- this is my welcome submarine
 <template class="entity" data-type="vehicle" data-speed-ms="2000">
 <script type="application/json">
 {
@@ -549,8 +628,8 @@
     "⠀⠀⠀⠀⠀⠀⢀⢀⠀⠐⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⡂⡂⠀⡒⢰⠀⢐⠂⡂⠀⡒⢐⠀⢐⠂⡂⠀⡒⢒⠀⢐⠂⡆⠀⡒⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⡒⠀⢐⢀⠀⠀⡀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠐⡂⡂",
     "⠀⠀⠠⠄⠤⠀⠬⠨⠅⠠⠅⠭⠀⠭⠨⠅⠨⠅⠁⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠈⠁⠀⠁⠉⠀⠈⠈⠁⠀⠁⠉⠀⠈⠈⠁⠀⠁⠭⠀⢨⠨⠅⠠⡅⠭⠀⠤⠠⠄⠠⠄⠀⠀⠀⠨⠅⠨⠅⠅",     
     "⣀⠀⢠⢠⡀⠀⡄⣄⠀⢠⢠⡀⢀⡄⣄⠀⣠⠀⠀⠀⠀⠀⠀[[CYAN]]THANKS FOR CHECKING OUT MY COOL SITE MY NAME IS KICK[[/]]⠀⢠⢀⡀⠀⡄⣀⠀⢠⢠⡀⠀⡄⣄⠀⣠⢠⡀⢀⡄⣄⠀⣠⢠⡀",
-    "⠒⠀⢐⢐⠂⠐⡂⡒⠀⢐⢐⠂⠐⡂⡒⠀⢒ [[CYAN]]I WATCHED THE ONION BOOTS VIDEO AND STARTED WORKING ON THIS[[/]] ⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⡒⠀⢐⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠂⠀⡀",
-    "⠭⠀⢨⠨⠅⠠⡅⠭⠀⠬⠨⠅⠨⠅⠭⠀⠭    [[CYAN]]CHECK OUT THE CHATROOM AND GUEST BOOK NEW FRIENDS[[/]]        ⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨⠨⠅⠠⠅⠭⠀⠭⠨⠅⠨⠅⠥⠀⠭⠨⠅⠨⠅⠄",
+    "⠒⠀⢐⢐⠂⠐⡂⡒⠀⢐⢐⠂⠐⡂⡒⠀⢒ [[CYAN]]I can't figure out what comes next on here to be honest[[/]]     ⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⡒⠀⢐⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠂⠀⡀",
+    "⠭⠀⢨⠨⠅⠠⡅⠭⠀⠬⠨⠅⠨⠅⠭⠀⠭    [[CYAN]]might need to tear it down and start from scratch[[/]]        ⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨⠨⠅⠠⠅⠭⠀⠭⠨⠅⠨⠅⠥⠀⠭⠨⠅⠨⠅⠄",
     "⣀⠀⢠⢠⡀⠀⡄⣄⠀⢠⢠⡀⢀⡄⣄⠀⢠⢠⡀⢀⡄⣄⠀⣠⢠⠀⢀⡄⡄⠀⣀⢠⠀⢀⡀⡄⠀⣄⢠⠀⢠⡀⡄⠀⣄⢠⠀⢠⡀⡄⠀⣄⣠⠀⢠⢀⡄⠀⡄⣠⠀⢠⢀⡄⠀⡄⣀⠀⢠⢀⡀⠀⡄⣀⠀⢠⢠⡀⠀⡄⣄⠀⣠⢠⡀⢀⡄⣄⠀⣠⢠⡀⢀⡄",
     "⠒⠀⢐⢐⠂⠐⡂⡒⠀⢐⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠀⠐⡂⡂⠀⣒⢐⠀⢐⠂⡂⠀⡒⢐⠀⢐⠂⡂⠀⡒⢐⠀⢐⠂⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⣒⠀⢐⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⠂",
     "⠀⠀⠈⠨⠅⠠⠅⠭⠀⠬⠨⠅⠨⠅⠭⠀⠬⠨⠅⠨⠅⠭⠀⠭⠨⠀⠨⠅⠅⠀⠭⠨⠀⠨⠅⡅⠀⠭⠨⠀⠨⠅⡅⠀⠭⠬⠀⠨⠄⡅⠀⠥⠬⠀⠨⠨⠅⠀⠅⠭⠀⠨⠨⠅⠀⡅⠭⠀⠨⠨⠅⠀⠅⠭⠀⢨⠨⠅⠠⠅⠭⠀⠭⠈⠁⠈⠁⠥⠀⠭⠨⠅",
@@ -571,8 +650,8 @@
     "⠀⠀⠀⠀⠀⢐⠐⡂⠀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⢀⠀⠀⡀⡒⠀⢒⢐⠂⠀⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢰⠀⢐⠂⡂⠀⡒⢰⠀⢐⠂⡂⠀⡒⢐⠀⢐⠂⡂⠀⡒⢐⠀⢐⠂⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡀⡀",
     "⠀⠀⠀⠀⠀⠨⠬⠅⠀⡅⠀⠀⠀⠠⠄⠀⠄⠤⠀⢨⠨⠅⠀⠅⠭⠀⢬⠈⠁⠀⠁⠉⠀⠉⠈⠁⠈⠁⠉⠀⠉⠈⠀⠈⠁⠉⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠁⠁⠀⠉⠈⠀⠈⠁⠁⠀⠁⠉⠀⠈⠨⠅⠀⠅⠭⠀⢨⠨⠅⠀⠅⠭⠀⠠⠠⠄",
     "⠀⠀⠀⠀⠀⠀⡄⣠⠀⢠⢀⡄⠀⡄⣠⠀⢠⢀⡄⠀⡄⣄⠀⢠⢠⡀⠀⡄ ⠀⠀⠀[[PINK]]THANKS FOR CHECKING OUT MY COOL SITE MY NAME IS KICK[[/]]⠀⠀⠀⠀ ⠀⢠⢀⡄⠀⡄⣀⠀⢠⢠⡀⠀⡄⣄⠀⢠",
-    "⠀⠀⠀⠀⡀⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⡒⠀⢒⢐⠂⠀⡂ ⠀ [[PINK]]I WATCHED THE ONION BOOTS VIDEO AND STARTED WORKING ON THIS[[/]]⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⡒⠀⢐",
-    "⠀⠀⠠⠤⠅⠀⠅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⠬⠨⠅⠠⡅ ⠀        [[PINK]]CHECK OUT THE CHATROOM AND GUEST BOOK NEW FRIENDS[[/]]  ⠀ ⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨",
+    "⠀⠀⠀⠀⡀⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⡒⠀⢒⢐⠂⠀⡂ ⠀ [[PINK]]I can't figure out what comes next on here to be honest[[/]]    ⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⡒⠀⢐",
+    "⠀⠀⠠⠤⠅⠀⠅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⠬⠨⠅⠠⡅ ⠀        [[PINK]]might need to tear it down and start from scratch[[/]]  ⠀ ⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨⠨⠅⠀⡅⠭⠀⢨",
     "⠀⠀⠀⢀⡄⠀⡄⣠⠀⢠⢀⡄⠀⡄⣠⠀⢠⢀⡄⠀⡄⣄⠀⢠⢠⡀⠀⡄⣄⠀⣠⢠⡀⢀⡄⣄⠀⣠⢠⡀⢀⡄⣄⠀⣠⢠⠀⢠⡀⡄⠀⣀⢠⠀⢠⡀⡄⠀⣄⢠⠀⢠⡀⡄⠀⣄⢠⠀⢠⡀⡄⠀⣄⣠⠀⢠⢀⡄⠀⡄⣠⠀⢠⢀⡄⠀⡄⣀⠀⢠⢠⡀⠀⡄⣄⠀⢠",
     "⠀⠀⠀⠐⠂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⡒⠀⢒⢐⠂⠀⡂⡒⠀⢒⢐⠂⠐⡂⡒⠀⢒⢐⠀⠐⡂⡒⠀⢒⢐⠀⢐⠂⡆⠀⡒⢐⠀⢐⠂⡂⠀⡒⢐⠀⢐⠒⡂⠀⡒⢰⠀⢐⠒⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⠐⡂⠀⡂⢒⠀⢐⢐⠂⠀⡂⡒⠀⠰",
     "⠀⠀⠀⠀⠀⠀⠅⠭⠀⢨⠈⠁⠀⠁⠭⠀⢨⠨⠅⠀⡅⠭⠀⠬⠨⠅⠠⠅⠭⠀⠬⠨⠅⠨⠅⠭⠀⠭⠨⠄⠨⠅⠥⠀⠭⠨⠀⠨⠅⡅⠀⠭⠨⠀⠨⠅⡅⠀⠭⠨⠀⠨⠥⠅⠀⠭⠬⠀⠨⠤⠅⠀⠥⠭⠀⠨⠨⠅⠀⡅⠭⠀⠨⠨⠅⠀⡅⠭⠀⠨⠨⠅⠀⡅⠉",
@@ -583,6 +662,7 @@
 }
 </script>
 </template>
+-->
 
 
 
@@ -2615,6 +2695,9 @@
     <!-- Entity overlays will be appended here by JS -->
 </div>
 
+<div id="fishSpeechTooltip" aria-hidden="true"></div>
+<div id="unlockToast" aria-live="assertive" aria-atomic="true"></div>
+
 <script>
 (function() {
     const stage = document.querySelector('.stage');
@@ -2623,6 +2706,7 @@
     let resizeRaf;
     let cols = 0;
     let rows = 0;
+    let visibleRows = 0;
     let charWidth = 8;
     let charHeight = 16;
 
@@ -2638,11 +2722,56 @@
 
     const fishes = [];
     const vehicles = [];
+    const jellies = [];
     const plants = [];
     const rocks = [];
     const pellets = [];
 
     let fishPoints = 0;
+
+    let fishCanTalkUnlocked = false;
+
+    const UNLOCK_THRESHOLDS = [
+        {
+            threshold: 25,
+            onUnlock() {
+                fishCanTalkUnlocked = true;
+                showUnlockToast('Fish Can Talk?', 'UNLOCKED!!!');
+            }
+        }
+    ];
+
+    function checkUnlocks(prev, next) {
+        for (const u of UNLOCK_THRESHOLDS) {
+            if (prev < u.threshold && next >= u.threshold) {
+                u.onUnlock();
+            }
+        }
+    }
+
+    function addFishPoints(amount) {
+        const prev = fishPoints;
+        fishPoints += amount;
+        renderFishPoints();
+        checkUnlocks(prev, fishPoints);
+    }
+
+    // ── Tuning constants (edit these to adjust behavior) ──────────────
+    const SWIM_PROXIMITY_PAD    = 2;    // grid units of desired spacing between bboxes
+    const INERTIA_WEIGHT        = 3;    // how strongly swimmers prefer continuing direction
+    const TARGET_MIN_DISTANCE   = 10;   // minimum distance when picking new target
+    const PELLET_FALL_MS        = 70;   // ms per pellet fall step
+    const PELLET_WIDTH          = 3;    // grid columns a pellet occupies
+    const PELLET_ART            = '[x]';// what a pellet looks like
+    const GRID_OVERSCAN         = 4;    // extra cols/rows beyond viewport
+    const SPEED_BOOST_MS        = 1000; // duration of initial speed boost
+    const PLANT_SWAY_BASE_MS   = 500;  // min ms between plant sway toggles
+    const PLANT_SWAY_RAND_MS   = 700;  // random extra ms added to sway
+    const SWIMMER_STAGGER_MS   = 500;  // max random start delay for swimmers
+    const TERMINAL_ZONE_X_FRAC = 0.1;  // left fraction of screen for secret zone
+    const TERMINAL_ZONE_Y_FRAC = 0.9;  // bottom fraction of screen for secret zone
+    const TERMINAL_CLICK_COUNT = 10;   // clicks in zone needed to open terminal
+    const POINTS_PER_PELLET    = 1;    // fish points awarded per pellet eaten
 
     function measureCharSize() {
         const probe = document.createElement('span');
@@ -2664,9 +2793,10 @@
         charWidth = measured.width;
         charHeight = measured.height;
 
-        const overscan = 4;
+        const overscan = GRID_OVERSCAN;
         cols = Math.max(1, Math.ceil(bounds.width / charWidth) + overscan);
-        rows = Math.max(1, Math.ceil(bounds.height / charHeight) + overscan);
+        visibleRows = Math.max(1, Math.ceil(bounds.height / charHeight));
+        rows = visibleRows + overscan;
 
         const line = '.'.repeat(cols);
         dotsPre.textContent = Array(rows).fill(line).join('\n');
@@ -2718,6 +2848,20 @@
         return linked;
     }
 
+    function createEntityOverlay(tpl, data) {
+        const popupIframeUrl = tpl.dataset.popupIframe || data.popupIframeUrl;
+        const popupTitle = data.popupTitle;
+        if (popupIframeUrl) {
+            const linked = createPopupOverlay(popupIframeUrl, data.shadowColor, data.shadowHoverColor, popupTitle);
+            return { el: linked.wrap, shadowEl: linked.shadow, mainEl: linked.main };
+        }
+        if (data.linkUrl) {
+            const linked = createLinkedOverlay(data.linkUrl, data.shadowColor, data.shadowHoverColor);
+            return { el: linked.wrap, shadowEl: linked.shadow, mainEl: linked.main };
+        }
+        return { el: createOverlay(), shadowEl: null, mainEl: null };
+    }
+
     function removePellet(pellet) {
         const idx = pellets.indexOf(pellet);
         if (idx >= 0) pellets.splice(idx, 1);
@@ -2729,10 +2873,103 @@
         fishPointsEl.textContent = `fishi points ${fishPoints}`;
     }
 
+    const toastEl = document.getElementById('unlockToast');
+    function showUnlockToast(title, subtitle) {
+        toastEl.innerHTML = `<div style="font-weight:700">${escapeHtml(title)}</div><div>${escapeHtml(subtitle)}</div>`;
+        toastEl.classList.remove('is-animating');
+        void toastEl.offsetWidth;
+        toastEl.classList.add('is-animating');
+        toastEl.addEventListener('animationend', () => {
+            toastEl.classList.remove('is-animating');
+        }, { once: true });
+    }
+
+    let fishQuotes = [];
+
+    function parseFishQuotesCsv(text) {
+        return text.split('\n')
+            .map(l => l.trim())
+            .filter(l => l && !l.startsWith('#'))
+            .map(l => {
+                const ci = l.indexOf(',');
+                const linesPart = ci >= 0 ? l.slice(0, ci) : l;
+                const restrictedPart = ci >= 0 ? l.slice(ci + 1).trim() : '';
+                const lines = linesPart.split('|').map(s => s.trim()).filter(Boolean);
+                const restrictedTo = restrictedPart
+                    ? restrictedPart.split(';').map(s => s.trim()).filter(Boolean)
+                    : [];
+                return { lines, restrictedTo };
+            })
+            .filter(q => q.lines.length > 0);
+    }
+
+    function loadFishQuotes() {
+        fetch('fishquotes.csv')
+            .then(r => r.text())
+            .then(text => { fishQuotes = parseFishQuotesCsv(text); })
+            .catch(() => {});
+    }
+
+    function getEligibleQuotes(swimmer) {
+        if (!fishCanTalkUnlocked || swimmer.entityType !== 'fish') return [];
+        return fishQuotes.filter(q => {
+            if (swimmer.limitedSpeech) {
+                return swimmer.specialId != null && q.restrictedTo.includes(swimmer.specialId);
+            }
+            return q.restrictedTo.length === 0 ||
+                   (swimmer.specialId != null && q.restrictedTo.includes(swimmer.specialId));
+        });
+    }
+
+    const fishSpeechTooltip = document.getElementById('fishSpeechTooltip');
+    let hoveredFishForSpeech = null;
+    let currentSpeechQuote = null;
+
+    function pickSpeechQuote(swimmer) {
+        const pool = getEligibleQuotes(swimmer);
+        if (!pool.length) return null;
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function updateFishSpeechTooltip(hoveredSwimmer, bounds) {
+        if (!fishCanTalkUnlocked || !hoveredSwimmer || hoveredSwimmer.entityType !== 'fish') {
+            fishSpeechTooltip.style.display = 'none';
+            hoveredFishForSpeech = null;
+            currentSpeechQuote = null;
+            return;
+        }
+        if (hoveredSwimmer !== hoveredFishForSpeech) {
+            hoveredFishForSpeech = hoveredSwimmer;
+            currentSpeechQuote = pickSpeechQuote(hoveredSwimmer);
+        }
+        if (!currentSpeechQuote) {
+            fishSpeechTooltip.style.display = 'none';
+            return;
+        }
+        fishSpeechTooltip.textContent = currentSpeechQuote.lines.join('\n');
+        fishSpeechTooltip.style.display = 'block';
+
+        const fishLeft   = bounds.left + hoveredSwimmer.x * charWidth;
+        const fishTop    = bounds.top  + hoveredSwimmer.y * charHeight;
+        const fishWidth  = hoveredSwimmer.width  * charWidth;
+        const fishHeight = hoveredSwimmer.height * charHeight;
+        const fishBottom = fishTop + fishHeight;
+        const midX       = fishLeft + fishWidth / 2;
+        const isNearTop  = fishTop < window.innerHeight * 0.1;
+        const gap        = 8;
+        const th         = fishSpeechTooltip.offsetHeight;
+
+        fishSpeechTooltip.style.left = midX + 'px';
+        if (isNearTop) {
+            fishSpeechTooltip.style.top = (fishBottom + gap) + 'px';
+        } else {
+            fishSpeechTooltip.style.top = (fishTop - th - gap) + 'px';
+        }
+    }
+
     function removePelletEatenByFish(pellet) {
         if (!pellets.includes(pellet)) return;
-        fishPoints++;
-        renderFishPoints();
+        addFishPoints(POINTS_PER_PELLET);
         removePellet(pellet);
     }
 
@@ -2750,7 +2987,7 @@
                 return;
             }
 
-            if (type === 'fish') {
+            if (type === 'fish' || type === 'vehicle' || type === 'jelly') {
                 const speedMs = parseInt(tpl.dataset.speedMs, 10) || 80;
                 const artLeft = data.artLeft || [];
                 const artRight = data.artRight || [];
@@ -2758,30 +2995,33 @@
                 const height = Math.max(artLeft.length, artRight.length);
 
                 const maxX = Math.max(0, cols - width);
-                const maxY = Math.max(0, rows - height);
-                const startX = Math.floor(Math.random() * (maxX + 1));
-                const startY = Math.floor(Math.random() * (maxY + 1));
-
-                let el;
-                let shadowEl;
-                let mainEl;
-                const popupIframeUrl = tpl.dataset.popupIframe || data.popupIframeUrl;
-                const popupTitle = data.popupTitle;
-                if (popupIframeUrl) {
-                    const linked = createPopupOverlay(popupIframeUrl, data.shadowColor, data.shadowHoverColor, popupTitle);
-                    el = linked.wrap;
-                    shadowEl = linked.shadow;
-                    mainEl = linked.main;
-                } else if (data.linkUrl) {
-                    const linked = createLinkedOverlay(data.linkUrl, data.shadowColor, data.shadowHoverColor);
-                    el = linked.wrap;
-                    shadowEl = linked.shadow;
-                    mainEl = linked.main;
-                } else {
-                    el = createOverlay();
+                const maxY = Math.max(0, visibleRows - height);
+                let startX, startY;
+                const placed = getSwimmers();
+                let found = false;
+                for (let attempt = 0; attempt < 60; attempt++) {
+                    startX = Math.floor(Math.random() * (maxX + 1));
+                    startY = Math.floor(Math.random() * (maxY + 1));
+                    const ax1 = startX + width - 1, ay1 = startY + height - 1;
+                    let ok = true;
+                    for (const o of placed) {
+                        if (!(ax1 < o.x || startX > o.x + o.width - 1 || ay1 < o.y || startY > o.y + o.height - 1)) {
+                            ok = false; break;
+                        }
+                    }
+                    if (ok) { found = true; break; }
+                }
+                if (!found) {
+                    startX = Math.floor(Math.random() * (maxX + 1));
+                    startY = Math.floor(Math.random() * (maxY + 1));
                 }
 
-                fishes.push({
+                const { el, shadowEl, mainEl } = createEntityOverlay(tpl, data);
+                const ghost = createEntityOverlay(tpl, data);
+                ghost.el.style.display = 'none';
+
+                const targetArr = type === 'fish' ? fishes : type === 'jelly' ? jellies : vehicles;
+                targetArr.push({
                     artLeft,
                     artRight,
                     width,
@@ -2791,56 +3031,20 @@
                     y: startY,
                     tx: startX,
                     ty: startY,
+                    dirX: 0,
+                    dirY: 0,
+                    isMouseOver: false,
+                    nextMoveAtMs: 0,
                     goingRight: false,
+                    specialId: tpl.dataset.specialId || null,
+                    limitedSpeech: tpl.dataset.limitedSpeech === 'true',
+                    entityType: type,
                     el,
                     shadowEl,
-                    mainEl
-                });
-            } else if (type === 'vehicle') {
-                const speedMs = parseInt(tpl.dataset.speedMs, 10) || 80;
-                const artLeft = data.artLeft || [];
-                const artRight = data.artRight || [];
-                const width = Math.max(...artLeft.map(l => l.length), ...artRight.map(l => l.length));
-                const height = Math.max(artLeft.length, artRight.length);
-
-                const maxX = Math.max(0, cols - width);
-                const maxY = Math.max(0, rows - height);
-                const startX = Math.floor(Math.random() * (maxX + 1));
-                const startY = Math.floor(Math.random() * (maxY + 1));
-
-                let el;
-                let shadowEl;
-                let mainEl;
-                const popupIframeUrl = tpl.dataset.popupIframe || data.popupIframeUrl;
-                const popupTitle = data.popupTitle;
-                if (popupIframeUrl) {
-                    const linked = createPopupOverlay(popupIframeUrl, data.shadowColor, data.shadowHoverColor, popupTitle);
-                    el = linked.wrap;
-                    shadowEl = linked.shadow;
-                    mainEl = linked.main;
-                } else if (data.linkUrl) {
-                    const linked = createLinkedOverlay(data.linkUrl, data.shadowColor, data.shadowHoverColor);
-                    el = linked.wrap;
-                    shadowEl = linked.shadow;
-                    mainEl = linked.main;
-                } else {
-                    el = createOverlay();
-                }
-
-                vehicles.push({
-                    artLeft,
-                    artRight,
-                    width,
-                    height,
-                    speedMs,
-                    x: startX,
-                    y: startY,
-                    tx: startX,
-                    ty: startY,
-                    goingRight: false,
-                    el,
-                    shadowEl,
-                    mainEl
+                    mainEl,
+                    ghostEl: ghost.el,
+                    ghostShadowEl: ghost.shadowEl,
+                    ghostMainEl: ghost.mainEl
                 });
             } else if (type === 'plant') {
                 const x = parseInt(tpl.dataset.x, 10) || 0;
@@ -2850,24 +3054,7 @@
                 const height = Math.max(stateA.length, stateB.length);
                 const width = Math.max(...stateA.map(l => l.length), ...stateB.map(l => l.length));
 
-                let el;
-                let shadowEl;
-                let mainEl;
-                const popupIframeUrl = tpl.dataset.popupIframe || data.popupIframeUrl;
-                const popupTitle = data.popupTitle;
-                if (popupIframeUrl) {
-                    const linked = createPopupOverlay(popupIframeUrl, data.shadowColor, data.shadowHoverColor, popupTitle);
-                    el = linked.wrap;
-                    shadowEl = linked.shadow;
-                    mainEl = linked.main;
-                } else if (data.linkUrl) {
-                    const linked = createLinkedOverlay(data.linkUrl, data.shadowColor, data.shadowHoverColor);
-                    el = linked.wrap;
-                    shadowEl = linked.shadow;
-                    mainEl = linked.main;
-                } else {
-                    el = createOverlay();
-                }
+                const { el, shadowEl, mainEl } = createEntityOverlay(tpl, data);
 
                 plants.push({
                     stateA,
@@ -2970,25 +3157,44 @@
         return (lines || []).map(parseInlineColorMarkup).join('\n');
     }
 
-    function renderFish(fish) {
-        const art = fish.goingRight ? fish.artRight : fish.artLeft;
-        if (fish.shadowEl) {
-            const html = artLinesToHtml(art);
-            fish.shadowEl.innerHTML = html;
-            fish.mainEl.innerHTML = html;
+    function renderSwimmer(swimmer) {
+        const art = swimmer.goingRight ? swimmer.artRight : swimmer.artLeft;
+        const html = artLinesToHtml(art);
+        if (swimmer.shadowEl) {
+            swimmer.shadowEl.innerHTML = html;
+            swimmer.mainEl.innerHTML = html;
 
-            const hitW = fish.width * charWidth;
-            const hitH = fish.height * charHeight;
-            fish.el.style.width = `${hitW}px`;
-            fish.el.style.height = `${hitH}px`;
+            const hitW = swimmer.width * charWidth;
+            const hitH = swimmer.height * charHeight;
+            swimmer.el.style.width = `${hitW}px`;
+            swimmer.el.style.height = `${hitH}px`;
         } else {
-            fish.el.innerHTML = artLinesToHtml(art);
+            swimmer.el.innerHTML = html;
         }
-        fish.el.style.transform = `translate(${fish.x * charWidth}px, ${fish.y * charHeight}px)`;
+        swimmer.el.style.transform = `translate(${swimmer.x * charWidth}px, ${swimmer.y * charHeight}px)`;
+
+        if (swimmer.ghostEl) {
+            const ghostVisible = swimmer.x + swimmer.width > cols || swimmer.x < 0;
+            if (ghostVisible) {
+                const gx = swimmer.x + swimmer.width > cols ? swimmer.x - cols : swimmer.x + cols;
+                if (swimmer.ghostShadowEl) {
+                    swimmer.ghostShadowEl.innerHTML = html;
+                    swimmer.ghostMainEl.innerHTML = html;
+                    swimmer.ghostEl.style.width = `${swimmer.width * charWidth}px`;
+                    swimmer.ghostEl.style.height = `${swimmer.height * charHeight}px`;
+                } else {
+                    swimmer.ghostEl.innerHTML = html;
+                }
+                swimmer.ghostEl.style.display = '';
+                swimmer.ghostEl.style.transform = `translate(${gx * charWidth}px, ${swimmer.y * charHeight}px)`;
+            } else {
+                swimmer.ghostEl.style.display = 'none';
+            }
+        }
     }
 
     function renderPellet(pellet) {
-        pellet.el.textContent = '[x]';
+        pellet.el.textContent = PELLET_ART;
         pellet.el.style.transform = `translate(${pellet.x * charWidth}px, ${pellet.y * charHeight}px)`;
     }
 
@@ -2998,8 +3204,9 @@
         const py0 = pellet.y;
         const py1 = pellet.y + pellet.height - 1;
 
-        for (let i = 0; i < fishes.length; i++) {
-            const f = fishes[i];
+        const eaters = fishes.concat(jellies);
+        for (let i = 0; i < eaters.length; i++) {
+            const f = eaters[i];
             const fx0 = f.x;
             const fx1 = f.x + f.width - 1;
             const fy0 = f.y;
@@ -3040,11 +3247,11 @@
         const localY = clientY - bounds.top;
 
         const pellet = {
-            width: 3,
+            width: PELLET_WIDTH,
             height: 1,
-            x: clamp(Math.floor(localX / charWidth), 0, Math.max(0, cols - 3)),
+            x: clamp(Math.floor(localX / charWidth), 0, Math.max(0, cols - PELLET_WIDTH)),
             y: clamp(Math.floor(localY / charHeight), 0, Math.max(0, rows - 1)),
-            fallMs: 70,
+            fallMs: PELLET_FALL_MS,
             el: createOverlay()
         };
 
@@ -3053,68 +3260,112 @@
     }
 
     function getSwimmers() {
-        return fishes.concat(vehicles);
+        return fishes.concat(vehicles, jellies);
+    }
+
+    function wrapX(x) {
+        return ((x % cols) + cols) % cols;
     }
 
     function moveSwimmer(swimmer) {
         if (swimmer.x === swimmer.tx && swimmer.y === swimmer.ty) {
             const maxX = Math.max(0, cols - swimmer.width - 1);
-            const maxY = Math.max(0, rows - swimmer.height - 1);
-            swimmer.tx = Math.floor(Math.random() * (maxX + 1));
-            swimmer.ty = Math.floor(Math.random() * (maxY + 1));
-        }
-
-        let desireX = swimmer.tx - swimmer.x;
-        let desireY = swimmer.ty - swimmer.y;
-
-        const centerX = swimmer.x + swimmer.width / 2;
-        const centerY = swimmer.y + swimmer.height / 2;
-
-        let repulseX = 0;
-        let repulseY = 0;
-        const avoidRadius = 7;
-
-        getSwimmers().forEach(other => {
-            if (other === swimmer) return;
-            const otherCenterX = other.x + other.width / 2;
-            const otherCenterY = other.y + other.height / 2;
-            const dx = centerX - otherCenterX;
-            const dy = centerY - otherCenterY;
-            const dist = Math.hypot(dx, dy);
-            if (!dist || dist > avoidRadius) return;
-            const strength = (avoidRadius - dist) / avoidRadius;
-            repulseX += (dx / dist) * strength;
-            repulseY += (dy / dist) * strength;
-        });
-
-        const steerX = desireX + repulseX * 6;
-        const steerY = desireY + repulseY * 6;
-
-        const stepX = steerX === 0 ? 0 : (steerX > 0 ? 1 : -1);
-        const stepY = steerY === 0 ? 0 : (steerY > 0 ? 1 : -1);
-
-        if (Math.abs(steerX) >= Math.abs(steerY)) {
-            swimmer.x = clamp(swimmer.x + stepX, 0, Math.max(0, cols - swimmer.width));
-            if (stepY !== 0 && Math.random() < 0.35) {
-                swimmer.y = clamp(swimmer.y + stepY, 0, Math.max(0, rows - swimmer.height));
-            }
-        } else {
-            swimmer.y = clamp(swimmer.y + stepY, 0, Math.max(0, rows - swimmer.height));
-            if (stepX !== 0 && Math.random() < 0.35) {
-                swimmer.x = clamp(swimmer.x + stepX, 0, Math.max(0, cols - swimmer.width));
+            const maxY = Math.max(0, visibleRows - swimmer.height - 1);
+            for (let i = 0; i < 20; i++) {
+                const nx = Math.floor(Math.random() * (maxX + 1));
+                const ny = Math.floor(Math.random() * (maxY + 1));
+                let dxT = Math.abs(nx - swimmer.x);
+                dxT = Math.min(dxT, cols - dxT);
+                if (dxT + Math.abs(ny - swimmer.y) >= TARGET_MIN_DISTANCE || i === 19) {
+                    swimmer.tx = nx;
+                    swimmer.ty = ny;
+                    break;
+                }
             }
         }
 
-        swimmer.goingRight = stepX > 0;
-        renderFish(swimmer);
-    }
+        const candidates = [
+            { dx: 0, dy: 0 },
+            { dx: -1, dy: 0 },
+            { dx: 1, dy: 0 },
+            { dx: 0, dy: -1 },
+            { dx: 0, dy: 1 }
+        ];
 
-    function moveFish(fish) {
-        moveSwimmer(fish);
-    }
+        const maxY = Math.max(0, visibleRows - swimmer.height);
+        const allSwimmers = getSwimmers();
 
-    function moveVehicle(vehicle) {
-        moveSwimmer(vehicle);
+        let stuck = false;
+        for (const o of allSwimmers) {
+            if (o === swimmer) continue;
+            let relX = o.x - swimmer.x;
+            if (relX > cols / 2) relX -= cols;
+            if (relX < -cols / 2) relX += cols;
+            const xOv = !(relX >= swimmer.width || relX + o.width <= 0);
+            const yOv = !(swimmer.y + swimmer.height - 1 < o.y || swimmer.y > o.y + o.height - 1);
+            if (xOv && yOv) { stuck = true; break; }
+        }
+
+        let bestCand = candidates[0];
+        let bestScore = Infinity;
+
+        for (let pass = 0; pass < 2; pass++) {
+        bestCand = candidates[0];
+        bestScore = Infinity;
+
+        for (const c of candidates) {
+            const nx = wrapX(swimmer.x + c.dx);
+            const ny = swimmer.y + c.dy;
+            if (ny < 0 || ny > maxY) continue;
+
+            const ay1 = ny + swimmer.height - 1;
+            let blocked = false;
+            let proxPenalty = 0;
+
+            for (const o of allSwimmers) {
+                if (o === swimmer) continue;
+                let relX = o.x - nx;
+                if (relX > cols / 2) relX -= cols;
+                if (relX < -cols / 2) relX += cols;
+                const xOverlap = !(relX >= swimmer.width || relX + o.width <= 0);
+                const yOverlap = !(ay1 < o.y || ny > o.y + o.height - 1);
+                if (xOverlap && yOverlap) {
+                    if (stuck) {
+                        proxPenalty += 200;
+                    } else {
+                        blocked = true;
+                        break;
+                    }
+                }
+                const gapX = Math.max(0, relX - swimmer.width, -(relX + o.width));
+                const gapY = Math.max(0, o.y - (ny + swimmer.height), ny - (o.y + o.height));
+                const edgeDist = gapX + gapY;
+                if (edgeDist < SWIM_PROXIMITY_PAD) proxPenalty += SWIM_PROXIMITY_PAD - edgeDist;
+            }
+            if (blocked) continue;
+
+            let dxTarget = Math.abs(nx - swimmer.tx);
+            dxTarget = Math.min(dxTarget, cols - dxTarget);
+            let score = dxTarget + Math.abs(ny - swimmer.ty);
+            if (c.dx !== 0 && c.dx === swimmer.dirX) score -= INERTIA_WEIGHT;
+            if (c.dy !== 0 && c.dy === swimmer.dirY) score -= INERTIA_WEIGHT;
+            score += proxPenalty + Math.random() * 0.5;
+
+            if (score < bestScore) {
+                bestScore = score;
+                bestCand = c;
+            }
+        }
+        if (bestScore < Infinity) break;
+        stuck = true;
+        }
+
+        swimmer.x = wrapX(swimmer.x + bestCand.dx);
+        swimmer.y = clamp(swimmer.y + bestCand.dy, 0, maxY);
+        if (bestCand.dx !== 0) swimmer.dirX = bestCand.dx;
+        if (bestCand.dy !== 0) swimmer.dirY = bestCand.dy;
+        if (bestCand.dx !== 0) swimmer.goingRight = bestCand.dx > 0;
+        renderSwimmer(swimmer);
     }
 
     function renderPlant(plant) {
@@ -3142,19 +3393,12 @@
     }
 
     function renderAllEntities() {
-        fishes.forEach(f => {
-            f.x = clamp(f.x, 0, Math.max(0, cols - f.width));
-            f.y = clamp(f.y, 0, Math.max(0, rows - f.height));
-            f.tx = clamp(f.tx, 0, Math.max(0, cols - f.width));
-            f.ty = clamp(f.ty, 0, Math.max(0, rows - f.height));
-            renderFish(f);
-        });
-        vehicles.forEach(v => {
-            v.x = clamp(v.x, 0, Math.max(0, cols - v.width));
-            v.y = clamp(v.y, 0, Math.max(0, rows - v.height));
-            v.tx = clamp(v.tx, 0, Math.max(0, cols - v.width));
-            v.ty = clamp(v.ty, 0, Math.max(0, rows - v.height));
-            renderFish(v);
+        getSwimmers().forEach(s => {
+            s.x = wrapX(s.x);
+            s.y = clamp(s.y, 0, Math.max(0, visibleRows - s.height));
+            s.tx = clamp(s.tx, 0, Math.max(0, cols - s.width));
+            s.ty = clamp(s.ty, 0, Math.max(0, visibleRows - s.height));
+            renderSwimmer(s);
         });
         plants.forEach(renderPlant);
         rocks.forEach(renderRock);
@@ -3173,29 +3417,35 @@
         });
     }
 
-    function startFishAnimation(fish) {
-        function tick() {
-            moveFish(fish);
-            setTimeout(() => requestAnimationFrame(tick), scaledDelay(fish.speedMs));
-        }
-        setTimeout(tick, scaledDelay(Math.random() * 500));
-    }
+    function startWorldLoop() {
+        const swimmers = getSwimmers();
+        const now = performance.now();
+        swimmers.forEach(s => {
+            s.nextMoveAtMs = now + Math.random() * SWIMMER_STAGGER_MS;
+        });
 
-    function startVehicleAnimation(vehicle) {
-        function tick() {
-            moveVehicle(vehicle);
-            setTimeout(() => requestAnimationFrame(tick), scaledDelay(vehicle.speedMs));
+        function worldTick() {
+            const t = performance.now();
+            const all = getSwimmers();
+            for (const s of all) {
+                if (s.isMouseOver) continue;
+                if (t >= s.nextMoveAtMs) {
+                    moveSwimmer(s);
+                    s.nextMoveAtMs = t + scaledDelay(s.speedMs);
+                }
+            }
+            requestAnimationFrame(worldTick);
         }
-        setTimeout(tick, scaledDelay(Math.random() * 500));
+        requestAnimationFrame(worldTick);
     }
 
     function startPlantAnimation(plant) {
         function toggle() {
             plant.currentState = !plant.currentState;
             renderPlant(plant);
-            setTimeout(toggle, scaledDelay(500 + Math.random() * 700));
+            setTimeout(toggle, scaledDelay(PLANT_SWAY_BASE_MS + Math.random() * PLANT_SWAY_RAND_MS));
         }
-        setTimeout(toggle, scaledDelay(Math.random() * 1000));
+        setTimeout(toggle, scaledDelay(Math.random() * (PLANT_SWAY_BASE_MS + PLANT_SWAY_RAND_MS)));
     }
 
     function queueFill() {
@@ -3212,27 +3462,54 @@
         window.visualViewport.addEventListener('scroll', queueFill);
     }
     window.addEventListener('load', () => {
-        speedBoostUntilMs = performance.now() + 1000;
+        speedBoostUntilMs = performance.now() + SPEED_BOOST_MS;
         renderFishPoints();
         fillDots();
         loadEntities();
         renderAllEntities();
-        fishes.forEach(startFishAnimation);
-        vehicles.forEach(startVehicleAnimation);
+        startWorldLoop();
         plants.forEach(startPlantAnimation);
+        loadFishQuotes();
     });
 
     stage.addEventListener('click', (e) => {
         if (e.target && e.target.closest && e.target.closest('.entity-link')) return;
         if (e.target && e.target.closest && e.target.closest('.entity-popup-window')) return;
-        const inBottomLeftZone = e.clientX <= window.innerWidth * 0.1 && e.clientY >= window.innerHeight * 0.9;
+        const inBottomLeftZone = e.clientX <= window.innerWidth * TERMINAL_ZONE_X_FRAC && e.clientY >= window.innerHeight * TERMINAL_ZONE_Y_FRAC;
         if (inBottomLeftZone && !terminalOpened) {
             bottomLeftPelletCount++;
-            if (bottomLeftPelletCount >= 10) {
+            if (bottomLeftPelletCount >= TERMINAL_CLICK_COUNT) {
                 openTerminalPopup();
             }
         }
         spawnPelletAtClientPoint(e.clientX, e.clientY);
+    });
+
+    stage.addEventListener('mousemove', (e) => {
+        const bounds = stage.getBoundingClientRect();
+        const mx = e.clientX - bounds.left;
+        const my = e.clientY - bounds.top;
+        getSwimmers().forEach(s => {
+            const sx = s.x * charWidth;
+            const sy = s.y * charHeight;
+            const w = s.width * charWidth;
+            const h = s.height * charHeight;
+            let hit = mx >= sx && mx <= sx + w && my >= sy && my <= sy + h;
+            if (!hit && s.x + s.width > cols) {
+                const gx = (s.x - cols) * charWidth;
+                hit = mx >= gx && mx <= gx + w && my >= sy && my <= sy + h;
+            }
+            s.isMouseOver = hit;
+        });
+        const hoveredSwimmer = fishes.find(s => s.isMouseOver) || null;
+        updateFishSpeechTooltip(hoveredSwimmer, bounds);
+    });
+
+    stage.addEventListener('mouseleave', () => {
+        getSwimmers().forEach(s => { s.isMouseOver = false; });
+        fishSpeechTooltip.style.display = 'none';
+        hoveredFishForSpeech = null;
+        currentSpeechQuote = null;
     });
 
     const siteMapBtn = document.getElementById('siteMapBtn');
@@ -3240,61 +3517,40 @@
     const siteMapModal = document.getElementById('siteMapModal');
     const siteMapClose = document.getElementById('siteMapClose');
     const siteMapChatBtn = document.getElementById('siteMapChatBtn');
+    const fishGameModal = document.getElementById('fishGameModal');
 
     const chatUrl = 'https://www3.cbox.ws/box/?boxid=3552838&boxtag=zm436D';
     let chatOpened = false;
-    let chatAutoOpenTimeoutId = null;
-    let chatCountdownIntervalId = null;
-    let chatSecondsRemaining = 7;
-
-    function updateChatButtonCountdown() {
-        if (chatOpened) {
-            chatBtn.textContent = 'chat';
-            return;
-        }
-        chatBtn.textContent = `chat (${chatSecondsRemaining})`;
-    }
-
-    function stopChatAutoOpen() {
-        if (chatAutoOpenTimeoutId !== null) {
-            clearTimeout(chatAutoOpenTimeoutId);
-            chatAutoOpenTimeoutId = null;
-        }
-        if (chatCountdownIntervalId !== null) {
-            clearInterval(chatCountdownIntervalId);
-            chatCountdownIntervalId = null;
-        }
-        chatBtn.textContent = 'chat';
-    }
 
     function openChatPopup() {
         if (chatOpened) return;
         chatOpened = true;
-        stopChatAutoOpen();
-        openEntityPopup(chatUrl, 'chat');
+        chatBtn.textContent = 'chat';
+        openEntityPopup(chatUrl, 'chat', () => {
+            chatOpened = false;
+        });
     }
 
     const onionClubUrl = 'https://www3.cbox.ws/box/?boxid=3524471&boxtag=aAEfAd';
+    const onionDarkUrl = 'https://iframe.chat/embed/?chat=kuroi_general';
+    const breadLoveURL = 'https://kickalt.com/breadlover.html';
+    const breadHateURL = 'https://kickalt.com/breadhater.html';
     let terminalOpened = false;
     let bottomLeftPelletCount = 0;
+
+    const TERMINAL_CODES = {
+        'onionclub':  { action: 'popup', url: onionClubUrl, title: 'onion cafe' },
+        'oniondark':  { action: 'popup', url: onionDarkUrl, title: 'onion dark' },
+        'fishi time': { action: 'points', amount: 1000000 },
+        'breadlover': { action: 'popup', url: breadLoveURL, title: 'bread love' },
+        'breadhater': { action: 'popup', url: breadHateURL, title: 'bread hate' },
+    };
 
     function openTerminalPopup() {
         if (terminalOpened) return;
         terminalOpened = true;
 
-        const popupId = ++popupIdCounter;
-        const offsetX = 12 + (popupStackOffset % 5) * 30;
-        const offsetY = 56 + (popupStackOffset % 5) * 30;
-        popupStackOffset++;
-
-        const popup = document.createElement('div');
-        popup.className = 'modal entity-popup-window';
-        popup.setAttribute('role', 'dialog');
-        popup.setAttribute('aria-modal', 'true');
-        popup.setAttribute('data-popup-id', popupId);
-        popup.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-
-        popup.innerHTML = `
+        const { popup } = createDraggablePopup('', `
             <div class="modal-header">
                 <div class="modal-title">terminal</div>
                 <button class="modal-close" type="button">close</button>
@@ -3304,45 +3560,11 @@
                 <input class="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="terminal code" />
                 <button class="modal-close" type="button" data-terminal-submit="1">enter</button>
             </div>
-        `;
+        `);
 
-        popupsContainer.appendChild(popup);
-
-        const header = popup.querySelector('.modal-header');
-        const closeBtn = popup.querySelector('.modal-close');
         const outputEl = popup.querySelector('.terminal-output');
         const inputEl = popup.querySelector('input');
         const submitBtn = popup.querySelector('[data-terminal-submit="1"]');
-
-        const state = {
-            id: popupId,
-            el: popup,
-            header,
-            iframe: null,
-            dragging: false,
-            currentX: offsetX,
-            currentY: offsetY,
-            startX: 0,
-            startY: 0,
-            startTransX: 0,
-            startTransY: 0
-        };
-
-        activePopups.push(state);
-
-        function bringToFront() {
-            const maxZ = activePopups.reduce((max, p) => {
-                const z = parseInt(getComputedStyle(p.el).zIndex, 10) || 80;
-                return Math.max(max, z);
-            }, 80);
-            popup.style.zIndex = maxZ + 1;
-        }
-
-        function closePopup() {
-            const idx = activePopups.findIndex(p => p.id === popupId);
-            if (idx >= 0) activePopups.splice(idx, 1);
-            popup.remove();
-        }
 
         function handleSubmit() {
             const raw = (inputEl.value || '').trim();
@@ -3353,26 +3575,23 @@
                 return;
             }
 
-            if (code === 'onionclub') {
-                outputEl.textContent = 'accepted';
-                openEntityPopup(onionClubUrl, 'onion cafe');
-                inputEl.value = '';
+            const entry = TERMINAL_CODES[code];
+            if (!entry) {
+                outputEl.textContent = 'invalid code';
+                inputEl.select();
                 return;
             }
 
-            if (code === 'fishi time') {
-                fishPoints += 1000000;
-                renderFishPoints();
-                outputEl.textContent = 'accepted';
-                inputEl.value = '';
-                return;
-            }
+            outputEl.textContent = 'accepted';
+            inputEl.value = '';
 
-            outputEl.textContent = 'invalid code';
-            inputEl.select();
+            if (entry.action === 'popup') {
+                openEntityPopup(entry.url, entry.title);
+            } else if (entry.action === 'points') {
+                addFishPoints(entry.amount);
+            }
         }
 
-        closeBtn.addEventListener('click', closePopup);
         submitBtn.addEventListener('click', handleSubmit);
         inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -3380,59 +3599,6 @@
                 handleSubmit();
             }
         });
-
-        popup.addEventListener('pointerdown', bringToFront);
-
-        function onPointerDown(e) {
-            if (e.button != null && e.button !== 0) return;
-            if (e.target.closest('button, a, input, textarea, select')) return;
-
-            state.dragging = true;
-            popup.classList.add('is-dragging');
-            header.setPointerCapture(e.pointerId);
-
-            state.startX = e.clientX;
-            state.startY = e.clientY;
-            state.startTransX = state.currentX;
-            state.startTransY = state.currentY;
-
-            bringToFront();
-            e.preventDefault();
-        }
-
-        function onPointerMove(e) {
-            if (!state.dragging) return;
-
-            const dx = e.clientX - state.startX;
-            const dy = e.clientY - state.startY;
-
-            let nextX = state.startTransX + dx;
-            let nextY = state.startTransY + dy;
-
-            const maxX = Math.max(0, window.innerWidth - popup.offsetWidth);
-            const maxY = Math.max(0, window.innerHeight - popup.offsetHeight);
-
-            nextX = Math.max(0, Math.min(nextX, maxX));
-            nextY = Math.max(0, Math.min(nextY, maxY));
-
-            state.currentX = nextX;
-            state.currentY = nextY;
-            popup.style.transform = `translate(${nextX}px, ${nextY}px)`;
-        }
-
-        function onPointerUp(e) {
-            if (!state.dragging) return;
-            state.dragging = false;
-            popup.classList.remove('is-dragging');
-            try { header.releasePointerCapture(e.pointerId); } catch (_) {}
-        }
-
-        header.addEventListener('pointerdown', onPointerDown);
-        header.addEventListener('pointermove', onPointerMove);
-        header.addEventListener('pointerup', onPointerUp);
-        header.addEventListener('pointercancel', onPointerUp);
-
-        bringToFront();
 
         setTimeout(() => {
             try { inputEl.focus(); } catch (_) {}
@@ -3449,6 +3615,42 @@
         siteMapModal.setAttribute('aria-hidden', 'true');
     }
 
+    function openFishGame() {
+        const modalEl = fishGameModal.querySelector('.modal');
+        if (modalEl) {
+            const rect = fishPointsEl.getBoundingClientRect();
+            modalEl.style.position = 'fixed';
+            modalEl.style.top = rect.top + 'px';
+            modalEl.style.left = rect.right + 'px';
+            modalEl.style.transform = 'translate(-100%, 0)';
+            modalEl.style.margin = '0';
+        }
+        fishGameModal.classList.add('is-open');
+        fishGameModal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeFishGame() {
+        const modalEl = fishGameModal.querySelector('.modal');
+        if (modalEl) {
+            modalEl.style.position = '';
+            modalEl.style.top = '';
+            modalEl.style.left = '';
+            modalEl.style.transform = '';
+            modalEl.style.margin = '';
+        }
+        fishGameModal.classList.remove('is-open');
+        fishGameModal.setAttribute('aria-hidden', 'true');
+    }
+
+    function updateFishGamePosition() {
+        if (!fishGameModal.classList.contains('is-open')) return;
+        const modalEl = fishGameModal.querySelector('.modal');
+        if (!modalEl) return;
+        const rect = fishPointsEl.getBoundingClientRect();
+        modalEl.style.top = rect.top + 'px';
+        modalEl.style.left = rect.right + 'px';
+    }
+
     siteMapBtn.addEventListener('click', () => {
         if (siteMapModal.classList.contains('is-open')) closeSiteMap();
         else openSiteMap();
@@ -3460,6 +3662,17 @@
         if (e.target === siteMapModal) closeSiteMap();
     });
 
+    fishPointsEl.addEventListener('click', () => {
+        if (fishGameModal.classList.contains('is-open')) closeFishGame();
+        else openFishGame();
+    });
+
+    fishGameModal.addEventListener('click', (e) => {
+        if (e.target === fishGameModal) closeFishGame();
+    });
+
+    window.addEventListener('resize', updateFishGamePosition);
+
     siteMapChatBtn.addEventListener('click', (e) => {
         e.preventDefault();
         openChatPopup();
@@ -3470,65 +3683,35 @@
         openChatPopup();
     });
 
-    updateChatButtonCountdown();
-    chatCountdownIntervalId = setInterval(() => {
-        if (chatOpened) return;
-        chatSecondsRemaining = Math.max(0, chatSecondsRemaining - 1);
-        updateChatButtonCountdown();
-        if (chatSecondsRemaining <= 0) {
-            openChatPopup();
-        }
-    }, 1000);
-
-    chatAutoOpenTimeoutId = setTimeout(() => {
-        openChatPopup();
-    }, 15000);
-
     const popupsContainer = document.getElementById('entityPopupsContainer');
     const activePopups = [];
     let popupIdCounter = 0;
     let popupStackOffset = 0;
 
-    function openEntityPopup(iframeUrl, title) {
+    function createDraggablePopup(extraClass, contentHtml, opts) {
+        opts = opts || {};
         const popupId = ++popupIdCounter;
         const offsetX = 12 + (popupStackOffset % 5) * 30;
         const offsetY = 56 + (popupStackOffset % 5) * 30;
         popupStackOffset++;
 
         const popup = document.createElement('div');
-        popup.className = 'modal modal-iframe entity-popup-window';
+        popup.className = ('modal ' + extraClass + ' entity-popup-window').replace(/\s+/g, ' ').trim();
         popup.setAttribute('role', 'dialog');
         popup.setAttribute('aria-modal', 'true');
         popup.setAttribute('data-popup-id', popupId);
         popup.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
-
-        popup.innerHTML = `
-            <div class="modal-header">
-                <div class="modal-title">${escapeHtml(title || 'popup')}</div>
-                <button class="modal-close" type="button">close</button>
-            </div>
-            <iframe
-                class="modal-iframe-frame"
-                src="${escapeHtml(iframeUrl)}"
-                allowtransparency="yes"
-                allow="autoplay"
-                frameborder="0"
-                marginheight="0"
-                marginwidth="0"
-                scrolling="auto"></iframe>
-        `;
+        popup.innerHTML = contentHtml;
 
         popupsContainer.appendChild(popup);
 
         const header = popup.querySelector('.modal-header');
         const closeBtn = popup.querySelector('.modal-close');
-        const iframe = popup.querySelector('iframe');
 
         const state = {
             id: popupId,
             el: popup,
             header,
-            iframe,
             dragging: false,
             currentX: offsetX,
             currentY: offsetY,
@@ -3551,46 +3734,38 @@
         function closePopup() {
             const idx = activePopups.findIndex(p => p.id === popupId);
             if (idx >= 0) activePopups.splice(idx, 1);
-            iframe.src = 'about:blank';
+            if (typeof opts.beforeClose === 'function') opts.beforeClose();
             popup.remove();
+            if (typeof opts.onClose === 'function') opts.onClose();
         }
 
         closeBtn.addEventListener('click', closePopup);
-
         popup.addEventListener('pointerdown', bringToFront);
 
         function onPointerDown(e) {
             if (e.button != null && e.button !== 0) return;
             if (e.target.closest('button, a, input, textarea, select')) return;
-
             state.dragging = true;
             popup.classList.add('is-dragging');
             header.setPointerCapture(e.pointerId);
-
             state.startX = e.clientX;
             state.startY = e.clientY;
             state.startTransX = state.currentX;
             state.startTransY = state.currentY;
-
             bringToFront();
             e.preventDefault();
         }
 
         function onPointerMove(e) {
             if (!state.dragging) return;
-
             const dx = e.clientX - state.startX;
             const dy = e.clientY - state.startY;
-
             let nextX = state.startTransX + dx;
             let nextY = state.startTransY + dy;
-
             const maxX = Math.max(0, window.innerWidth - popup.offsetWidth);
             const maxY = Math.max(0, window.innerHeight - popup.offsetHeight);
-
             nextX = Math.max(0, Math.min(nextX, maxX));
             nextY = Math.max(0, Math.min(nextY, maxY));
-
             state.currentX = nextX;
             state.currentY = nextY;
             popup.style.transform = `translate(${nextX}px, ${nextY}px)`;
@@ -3609,11 +3784,42 @@
         header.addEventListener('pointercancel', onPointerUp);
 
         bringToFront();
+
+        return { popup, state, bringToFront, closePopup };
+    }
+
+    function openEntityPopup(iframeUrl, title, onClose) {
+        const defaultW = Math.min(760, window.innerWidth - 24);
+        const defaultH = 450 + 48;
+        const { popup } = createDraggablePopup('modal-iframe', `
+            <div class="modal-header">
+                <div class="modal-title">${escapeHtml(title || 'popup')}</div>
+                <button class="modal-close" type="button">close</button>
+            </div>
+            <iframe
+                class="modal-iframe-frame"
+                src="${escapeHtml(iframeUrl)}"
+                allowtransparency="yes"
+                allow="autoplay"
+                frameborder="0"
+                marginheight="0"
+                marginwidth="0"
+                scrolling="auto"></iframe>
+        `, {
+            beforeClose: () => {
+                const iframe = popup.querySelector('iframe');
+                if (iframe) iframe.src = 'about:blank';
+            },
+            onClose
+        });
+        popup.style.width = defaultW + 'px';
+        popup.style.height = defaultH + 'px';
     }
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             closeSiteMap();
+            closeFishGame();
         }
     });
 })();
