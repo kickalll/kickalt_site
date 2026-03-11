@@ -6,31 +6,57 @@
     <style>
       body {
         background-color: #8B0000;
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-      }
-      #chattable, #chattable2 {
-        display: block;
-        margin: 0;
-        width: 48%;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
         height: 100vh;
-        min-width: 100px;
-        max-width: 50vw;
-       
-        min-height: 100vh;
+        margin: 0;
+      }
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      h2 {
+        margin: 0;
+        padding: 10px;
+        background-color: #A00000;
+        color: white;
+        font-size: 1.2em;
+      }
+      iframe {
+        flex: 1;
+        border: none;
       }
     </style>
     <script>
       window.addEventListener("load", function(){
         const css = `body { background: #8B0000; color: white; }`; // Custom CSS for chat styling
-        document.getElementById("chattable").contentWindow.postMessage(css, "*");
-        document.getElementById("chattable2").contentWindow.postMessage(css, "*");
+        document.querySelectorAll('iframe').forEach(iframe => {
+          iframe.contentWindow.postMessage(css, "*");
+        });
       });
     </script>
   </head>
   <body>
-   <iframe src="https://iframe.chat/embed/?chat=kuroi_general" id="chattable" frameborder="0"></iframe>
-   <iframe src="https://beta.iframe.chat/embed/alternate/?chat=57918527" id="chattable2" frameborder="0"></iframe>
+    <div class="chat-container">
+      <h2>kick</h2>
+      <iframe src="https://www3.cbox.ws/box/?boxid=3552838&boxtag=zm436D" id="chattable5" frameborder="0"></iframe>
+    </div>
+    <div class="chat-container">
+      <h2>Kuroi</h2>
+      <iframe src="https://iframe.chat/embed/?chat=kuroi_general" id="chattable3" frameborder="0"></iframe>
+    </div>
+    <div class="chat-container">
+      <h2>Onio</h2>
+      <iframe src="https://www3.cbox.ws/box/?boxid=3524471&boxtag=aAEfAd" id="chattable2" frameborder="0"></iframe>
+    </div>
+    <div class="chat-container">
+      <h2>Onio Dark</h2>
+      <iframe src="https://beta.iframe.chat/embed/alternate/?chat=57918527" id="chattable4" frameborder="0"></iframe>
+    </div>
+    <div class="chat-container">
+      <h2>Panda</h2>
+      <iframe src="https://www5.cbox.ws/box/?boxid=961689&boxtag=wAAXxg" id="chattable" frameborder="0"></iframe>
+    </div>
   </body>
 </html>
