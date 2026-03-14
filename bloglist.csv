@@ -1,0 +1,5 @@
+filename,title,date,tags,excerpt
+howbuttonswork.md,How Buttons Work,2026-03-13,dev,How the buttons in the ASCII aquarium work
+persistenceplan.md,Persistence Plan,2026-03-10,dev,How to add localStorage persistence to index.html
+INDEXDESIGN.md,Index Design Doc,2026-03-08,dev,Developer map for the ASCII aquarium index page
+nieghborsdesign.md,Neighbors Design,2026-03-05,dev,Code walkthrough for the detective board neighbors page

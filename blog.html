@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - kickalt</title>
+    <style>
+        /* ── Theme tokens ── */
+        :root {
+            --bg:                #1a1a2e;
+            --bg-surface:        #16213e;
+            --bg-nav:            #0f3460;
+            --bg-nav-hover:      #1a4a7a;
+            --bg-nav-active:     #e94560;
+            --bg-code:           #0d1117;
+            --bg-blockquote:     rgba(233,69,96,0.08);
+            --text:              #e0e0e0;
+            --text-muted:        #8892a4;
+            --text-heading:      #ffffff;
+            --text-nav:          #c8d6e5;
+            --text-nav-active:   #ffffff;
+            --text-link:         #e94560;
+            --text-code:         #c9d1d9;
+            --border:            rgba(255,255,255,0.08);
+            --border-blockquote: #e94560;
+            --accent:            #e94560;
+            --accent-hover:      #ff6b81;
+
+            --font-body:         "Courier New", Courier, monospace;
+            --font-mono:         "Courier New", Courier, monospace;
+
+            --nav-width:         260px;
+            --sidebar-width:     0px;
+            --content-max-width: 780px;
+            --space-xs:          4px;
+            --space-sm:          8px;
+            --space-md:          16px;
+            --space-lg:          24px;
+            --space-xl:          40px;
+            --radius:            6px;
+        }
+
+        /* ── Reset ── */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* ── Layout shell (CSS Grid) ── */
+        #blogShell {
+            display: grid;
+            grid-template-columns: var(--nav-width) 1fr var(--sidebar-width);
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "nav header sidebar"
+                "nav article sidebar";
+            width: 100%;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        /* ── Mobile header (hamburger bar) ── */
+        #mobileHeader {
+            display: none;
+            grid-area: header;
+            background: var(--bg-nav);
+            padding: var(--space-sm) var(--space-md);
+            align-items: center;
+            gap: var(--space-sm);
+            border-bottom: 1px solid var(--border);
+            z-index: 20;
+        }
+
+        #menuToggle {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 22px;
+            cursor: pointer;
+            font-family: var(--font-body);
+            padding: var(--space-xs) var(--space-sm);
+        }
+
+        #mobileHeader .header-title {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* ── Post navigation (left column) ── */
+        #postNav {
+            grid-area: nav;
+            background: var(--bg-nav);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        #postNav .nav-header {
+            padding: var(--space-lg) var(--space-md) var(--space-md);
+            border-bottom: 1px solid var(--border);
+        }
+
+        #postNav .nav-header h2 {
+            font-size: 18px;
+            color: var(--text-heading);
+            margin-bottom: var(--space-sm);
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-family: var(--font-body);
+            font-size: 13px;
+            outline: none;
+        }
+
+        #searchInput:focus {
+            border-color: var(--accent);
+        }
+
+        #postList {
+            list-style: none;
+            overflow-y: auto;
+            flex: 1;
+            scrollbar-width: thin;
+            scrollbar-color: var(--bg-nav-hover) transparent;
+        }
+
+        #postList li {
+            border-bottom: 1px solid var(--border);
+        }
+
+        #postList li a {
+            display: block;
+            padding: var(--space-md);
+            color: var(--text-nav);
+            text-decoration: none;
+            transition: background 0.15s ease, color 0.15s ease;
+            font-size: 14px;
+        }
+
+        #postList li a:hover {
+            background: var(--bg-nav-hover);
+        }
+
+        #postList li a.active {
+            background: var(--bg-nav-active);
+            color: var(--text-nav-active);
+        }
+
+        #postList li a .post-date {
+            display: block;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        #postList li a.active .post-date {
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ── Article area (center column) ── */
+        #articleArea {
+            grid-area: article;
+            overflow-y: auto;
+            padding: var(--space-xl) var(--space-lg);
+            scrollbar-width: thin;
+            scrollbar-color: var(--bg-nav-hover) transparent;
+        }
+
+        #articleContent {
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+        }
+
+        /* ── Article typography ── */
+        #articleContent h1 { font-size: 28px; color: var(--text-heading); margin: 0 0 var(--space-lg); line-height: 1.3; }
+        #articleContent h2 { font-size: 22px; color: var(--text-heading); margin: var(--space-xl) 0 var(--space-md); line-height: 1.3; }
+        #articleContent h3 { font-size: 18px; color: var(--text-heading); margin: var(--space-lg) 0 var(--space-sm); }
+        #articleContent h4 { font-size: 16px; color: var(--text-heading); margin: var(--space-lg) 0 var(--space-sm); }
+        #articleContent h5 { font-size: 15px; color: var(--text-heading); margin: var(--space-md) 0 var(--space-xs); }
+        #articleContent h6 { font-size: 14px; color: var(--text-muted);   margin: var(--space-md) 0 var(--space-xs); }
+
+        #articleContent p {
+            margin: 0 0 var(--space-md);
+        }
+
+        #articleContent a {
+            color: var(--text-link);
+            text-decoration: underline;
+            text-decoration-color: rgba(233,69,96,0.4);
+            text-underline-offset: 2px;
+            transition: color 0.15s;
+        }
+
+        #articleContent a:hover {
+            color: var(--accent-hover);
+        }
+
+        #articleContent strong { color: var(--text-heading); }
+
+        #articleContent code {
+            font-family: var(--font-mono);
+            background: var(--bg-code);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            color: var(--text-code);
+        }
+
+        #articleContent pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: var(--space-md);
+            overflow-x: auto;
+            margin: 0 0 var(--space-md);
+        }
+
+        #articleContent pre code {
+            background: none;
+            padding: 0;
+            border-radius: 0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        #articleContent blockquote {
+            border-left: 3px solid var(--border-blockquote);
+            background: var(--bg-blockquote);
+            padding: var(--space-sm) var(--space-md);
+            margin: 0 0 var(--space-md);
+            border-radius: 0 var(--radius) var(--radius) 0;
+        }
+
+        #articleContent blockquote p {
+            margin: 0;
+        }
+
+        #articleContent ul,
+        #articleContent ol {
+            margin: 0 0 var(--space-md) var(--space-lg);
+        }
+
+        #articleContent li {
+            margin-bottom: var(--space-xs);
+        }
+
+        #articleContent img {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius);
+            margin: var(--space-sm) 0;
+        }
+
+        #articleContent hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: var(--space-lg) 0;
+        }
+
+        /* ── Welcome / empty state ── */
+        .welcome-state {
+            text-align: center;
+            padding: var(--space-xl) var(--space-md);
+            color: var(--text-muted);
+        }
+
+        .welcome-state h1 {
+            color: var(--text-heading);
+            margin-bottom: var(--space-md);
+        }
+
+        /* ── Loading spinner ── */
+        .loading-spinner {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--text-muted);
+        }
+
+        .loading-spinner::after {
+            content: '...';
+            animation: dots 1.2s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%   { content: '';    }
+            25%  { content: '.';   }
+            50%  { content: '..';  }
+            75%  { content: '...'; }
+        }
+
+        /* ── Error state ── */
+        .error-state {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--accent);
+        }
+
+        /* ── Sidebar (future, currently collapsed) ── */
+        #blogSidebar {
+            grid-area: sidebar;
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border);
+            overflow-y: auto;
+            display: none;
+        }
+
+        /* Activate sidebar: set --sidebar-width to e.g. 260px and toggle display */
+        #blogShell[data-sidebar="open"] #blogSidebar {
+            display: block;
+        }
+
+        /* ── Mobile overlay for nav ── */
+        #navOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 29;
+        }
+
+        /* ── Responsive: mobile ── */
+        @media (max-width: 899px) {
+            #blogShell {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+                grid-template-areas:
+                    "header"
+                    "article";
+            }
+
+            #mobileHeader {
+                display: flex;
+            }
+
+            #postNav {
+                position: fixed;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: min(300px, 80vw);
+                z-index: 30;
+                transform: translateX(-100%);
+                transition: transform 0.25s ease;
+            }
+
+            #postNav.open {
+                transform: translateX(0);
+            }
+
+            #navOverlay.open {
+                display: block;
+            }
+
+            #blogSidebar {
+                display: none !important;
+            }
+
+            #articleArea {
+                padding: var(--space-md);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div id="blogShell">
+    <!-- Mobile header -->
+    <div id="mobileHeader">
+        <button id="menuToggle" aria-label="Toggle post list">&#9776;</button>
+        <span class="header-title">Blog</span>
+    </div>
+
+    <!-- Post navigation -->
+    <nav id="postNav">
+        <div class="nav-header">
+            <h2>Blog</h2>
+            <input type="text" id="searchInput" placeholder="Search posts..." aria-label="Search posts">
+        </div>
+        <ul id="postList"></ul>
+    </nav>
+
+    <!-- Nav overlay for mobile -->
+    <div id="navOverlay"></div>
+
+    <!-- Article viewer -->
+    <main id="articleArea">
+        <div id="articleContent">
+            <div class="welcome-state">
+                <h1>Blog</h1>
+                <p>Select a post from the list to start reading.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sidebar placeholder for future use -->
+    <aside id="blogSidebar"></aside>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── DOM refs ── */
+    var postListEl     = document.getElementById('postList');
+    var articleContent  = document.getElementById('articleContent');
+    var searchInput     = document.getElementById('searchInput');
+    var postNav         = document.getElementById('postNav');
+    var navOverlay      = document.getElementById('navOverlay');
+    var menuToggle      = document.getElementById('menuToggle');
+
+    var posts    = [];
+    var postCache = {};
+
+    /* ── CSV parser ── */
+    function parseCsv(text) {
+        var lines = text.split(/\r?\n/).map(function (l) { return l.trim(); });
+        lines = lines.filter(function (l) { return l.length > 0 && l[0] !== '#'; });
+        if (lines.length === 0) return [];
+
+        var firstLine = lines[0].toLowerCase();
+        var hasHeaders = firstLine.indexOf(',') !== -1 && firstLine.indexOf('filename') !== -1;
+
+        if (hasHeaders) {
+            var headers = lines[0].split(',').map(function (h) { return h.trim().toLowerCase(); });
+            var fnIdx    = headers.indexOf('filename');
+            var titleIdx = headers.indexOf('title');
+            var dateIdx  = headers.indexOf('date');
+            var tagsIdx  = headers.indexOf('tags');
+            var excerptIdx = headers.indexOf('excerpt');
+
+            return lines.slice(1).filter(function (l) { return l.length > 0; }).map(function (line) {
+                var cols = splitCsvLine(line);
+                var fn = (cols[fnIdx] || '').trim();
+                if (fn && fn.indexOf('.md') === -1) fn += '.md';
+                return {
+                    filename: fn,
+                    title:    titleIdx  >= 0 ? (cols[titleIdx]  || '').trim() : '',
+                    date:     dateIdx   >= 0 ? (cols[dateIdx]   || '').trim() : '',
+                    tags:     tagsIdx   >= 0 ? (cols[tagsIdx]   || '').trim() : '',
+                    excerpt:  excerptIdx >= 0 ? (cols[excerptIdx] || '').trim() : ''
+                };
+            }).filter(function (p) { return p.filename; });
+        }
+
+        return lines.map(function (line) {
+            var fn = line.trim();
+            if (fn && fn.indexOf('.md') === -1) fn += '.md';
+            return { filename: fn, title: '', date: '', tags: '', excerpt: '' };
+        }).filter(function (p) { return p.filename; });
+    }
+
+    function splitCsvLine(line) {
+        var result = [];
+        var current = '';
+        var inQuotes = false;
+        for (var i = 0; i < line.length; i++) {
+            var ch = line[i];
+            if (ch === '"') {
+                if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                    current += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (ch === ',' && !inQuotes) {
+                result.push(current);
+                current = '';
+            } else {
+                current += ch;
+            }
+        }
+        result.push(current);
+        return result;
+    }
+
+    /* ── Attachment resolver ── */
+    function resolveAttachments(md) {
+        return md.replace(/!\[\[([^\]]+)\]\]/g, function (match, path) {
+            var resolved = 'blogposts/attachments/' + path.trim();
+            var ext = path.trim().split('.').pop().toLowerCase();
+            var imageExts = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'];
+            if (imageExts.indexOf(ext) !== -1) {
+                return '![' + path.trim() + '](' + resolved + ')';
+            }
+            return '[' + path.trim() + '](' + resolved + ')';
+        });
+    }
+
+    /* ── Frontmatter parser ── */
+    function extractFrontmatter(md) {
+        var meta = { title: '', date: '' };
+        var content = md;
+        if (md.substring(0, 3) === '---') {
+            var endIdx = md.indexOf('---', 3);
+            if (endIdx !== -1) {
+                var block = md.substring(3, endIdx).trim();
+                content = md.substring(endIdx + 3).trim();
+                block.split(/\r?\n/).forEach(function (line) {
+                    var colonIdx = line.indexOf(':');
+                    if (colonIdx !== -1) {
+                        var key = line.substring(0, colonIdx).trim().toLowerCase();
+                        var val = line.substring(colonIdx + 1).trim();
+                        if (key === 'title') meta.title = val;
+                        if (key === 'date')  meta.date = val;
+                    }
+                });
+            }
+        }
+        return { meta: meta, content: content };
+    }
+
+    /* ── Markdown renderer ── */
+    function renderMarkdown(md) {
+        md = resolveAttachments(md);
+        var fm = extractFrontmatter(md);
+        md = fm.content;
+
+        var html = '';
+        var lines = md.split(/\r?\n/);
+        var i = 0;
+
+        while (i < lines.length) {
+            var line = lines[i];
+
+            /* Code blocks (fenced) */
+            if (line.match(/^```/)) {
+                var code = '';
+                i++;
+                while (i < lines.length && !lines[i].match(/^```/)) {
+                    code += escapeHtml(lines[i]) + '\n';
+                    i++;
+                }
+                i++; /* skip closing ``` */
+                html += '<pre><code>' + code + '</code></pre>\n';
+                continue;
+            }
+
+            /* Headings */
+            var headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+            if (headingMatch) {
+                var level = headingMatch[1].length;
+                html += '<h' + level + '>' + inlineFormat(headingMatch[2]) + '</h' + level + '>\n';
+                i++;
+                continue;
+            }
+
+            /* Horizontal rule */
+            if (line.match(/^(\*{3,}|-{3,}|_{3,})\s*$/)) {
+                html += '<hr>\n';
+                i++;
+                continue;
+            }
+
+            /* Blockquote */
+            if (line.match(/^>\s?/)) {
+                var bqLines = [];
+                while (i < lines.length && lines[i].match(/^>\s?/)) {
+                    bqLines.push(lines[i].replace(/^>\s?/, ''));
+                    i++;
+                }
+                html += '<blockquote>' + renderMarkdown(bqLines.join('\n')) + '</blockquote>\n';
+                continue;
+            }
+
+            /* Unordered list */
+            if (line.match(/^[\-\*]\s+/)) {
+                html += '<ul>\n';
+                while (i < lines.length && lines[i].match(/^[\-\*]\s+/)) {
+                    html += '<li>' + inlineFormat(lines[i].replace(/^[\-\*]\s+/, '')) + '</li>\n';
+                    i++;
+                }
+                html += '</ul>\n';
+                continue;
+            }
+
+            /* Ordered list */
+            if (line.match(/^\d+\.\s+/)) {
+                html += '<ol>\n';
+                while (i < lines.length && lines[i].match(/^\d+\.\s+/)) {
+                    html += '<li>' + inlineFormat(lines[i].replace(/^\d+\.\s+/, '')) + '</li>\n';
+                    i++;
+                }
+                html += '</ol>\n';
+                continue;
+            }
+
+            /* Blank line */
+            if (line.trim() === '') {
+                i++;
+                continue;
+            }
+
+            /* Paragraph: collect consecutive non-blank, non-special lines */
+            var paraLines = [];
+            while (i < lines.length && lines[i].trim() !== '' &&
+                   !lines[i].match(/^```/) &&
+                   !lines[i].match(/^#{1,6}\s/) &&
+                   !lines[i].match(/^>\s?/) &&
+                   !lines[i].match(/^[\-\*]\s+/) &&
+                   !lines[i].match(/^\d+\.\s+/) &&
+                   !lines[i].match(/^(\*{3,}|-{3,}|_{3,})\s*$/)) {
+                paraLines.push(lines[i]);
+                i++;
+            }
+            if (paraLines.length > 0) {
+                html += '<p>' + inlineFormat(paraLines.join('\n')) + '</p>\n';
+            }
+        }
+
+        return html;
+    }
+
+    function escapeHtml(str) {
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function inlineFormat(text) {
+        text = escapeHtml(text);
+
+        /* Images: ![alt](src) */
+        text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy">');
+
+        /* Links: [text](url) */
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+        /* Inline code (before bold/italic to avoid conflicts) */
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        /* Bold + italic: ***text*** */
+        text = text.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+
+        /* Bold: **text** */
+        text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+        /* Italic: *text* */
+        text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+        /* Line breaks within a paragraph */
+        text = text.replace(/\n/g, '<br>');
+
+        return text;
+    }
+
+    /* ── Title extraction from markdown ── */
+    function extractTitle(md, filename) {
+        var fm = extractFrontmatter(md);
+        if (fm.meta.title) return fm.meta.title;
+        var h1 = md.match(/^#\s+(.+)$/m);
+        if (h1) return h1[1];
+        return filename.replace(/\.md$/i, '').replace(/[-_]/g, ' ');
+    }
+
+    function extractDate(md) {
+        var fm = extractFrontmatter(md);
+        return fm.meta.date || '';
+    }
+
+    /* ── Render post list ── */
+    function renderPostList(filteredPosts) {
+        postListEl.innerHTML = '';
+        var currentPost = getHashPost();
+
+        filteredPosts.forEach(function (post) {
+            var li = document.createElement('li');
+            var a  = document.createElement('a');
+            a.href = '#post=' + encodeURIComponent(post.filename);
+            a.textContent = post.displayTitle || post.filename;
+            if (post.displayDate) {
+                var dateSpan = document.createElement('span');
+                dateSpan.className = 'post-date';
+                dateSpan.textContent = post.displayDate;
+                a.appendChild(dateSpan);
+            }
+            if (post.filename === currentPost) a.classList.add('active');
+            a.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.location.hash = 'post=' + encodeURIComponent(post.filename);
+            });
+            li.appendChild(a);
+            postListEl.appendChild(li);
+        });
+    }
+
+    /* ── Filter posts by search ── */
+    function filterPosts() {
+        var query = searchInput.value.toLowerCase();
+        var filtered = posts.filter(function (p) {
+            return (p.displayTitle || p.filename).toLowerCase().indexOf(query) !== -1 ||
+                   (p.tags || '').toLowerCase().indexOf(query) !== -1;
+        });
+        renderPostList(filtered);
+    }
+
+    /* ── Load and render a single post ── */
+    function loadPost(filename) {
+        if (!filename) {
+            articleContent.innerHTML = '<div class="welcome-state"><h1>Blog</h1><p>Select a post from the list to start reading.</p></div>';
+            return;
+        }
+
+        articleContent.innerHTML = '<div class="loading-spinner">Loading</div>';
+
+        if (postCache[filename]) {
+            showPost(postCache[filename], filename);
+            return;
+        }
+
+        fetch('blogposts/' + filename)
+            .then(function (res) {
+                if (!res.ok) throw new Error('Not found');
+                return res.text();
+            })
+            .then(function (md) {
+                postCache[filename] = md;
+                showPost(md, filename);
+            })
+            .catch(function () {
+                articleContent.innerHTML = '<div class="error-state"><h2>Post not found</h2><p>Could not load <code>' + escapeHtml(filename) + '</code>.</p></div>';
+            });
+    }
+
+    function showPost(md, filename) {
+        var html = renderMarkdown(md);
+        articleContent.innerHTML = html;
+        articleContent.scrollTop = 0;
+        document.getElementById('articleArea').scrollTop = 0;
+
+        /* Update active state in nav */
+        var allLinks = postListEl.querySelectorAll('a');
+        allLinks.forEach(function (a) {
+            var linkFile = decodeURIComponent(a.getAttribute('href').replace('#post=', ''));
+            a.classList.toggle('active', linkFile === filename);
+        });
+
+        /* Close mobile nav after selection */
+        closeMobileNav();
+    }
+
+    /* ── Hash routing ── */
+    function getHashPost() {
+        var hash = window.location.hash;
+        if (hash.indexOf('#post=') === 0) {
+            return decodeURIComponent(hash.substring(6));
+        }
+        return '';
+    }
+
+    function onHashChange() {
+        var filename = getHashPost();
+        loadPost(filename);
+    }
+
+    window.addEventListener('hashchange', onHashChange);
+
+    /* ── Mobile nav toggle ── */
+    function openMobileNav() {
+        postNav.classList.add('open');
+        navOverlay.classList.add('open');
+    }
+
+    function closeMobileNav() {
+        postNav.classList.remove('open');
+        navOverlay.classList.remove('open');
+    }
+
+    menuToggle.addEventListener('click', function () {
+        if (postNav.classList.contains('open')) {
+            closeMobileNav();
+        } else {
+            openMobileNav();
+        }
+    });
+
+    navOverlay.addEventListener('click', closeMobileNav);
+
+    /* ── Search ── */
+    searchInput.addEventListener('input', filterPosts);
+
+    /* ── Init: fetch CSV and build list ── */
+    fetch('bloglist.csv')
+        .then(function (res) {
+            if (!res.ok) throw new Error('CSV not found');
+            return res.text();
+        })
+        .then(function (text) {
+            posts = parseCsv(text);
+            if (posts.length === 0) {
+                articleContent.innerHTML = '<div class="welcome-state"><h1>Blog</h1><p>No posts found. Add entries to <code>bloglist.csv</code>.</p></div>';
+                return;
+            }
+
+            /* Resolve display titles/dates: fetch each md to extract if CSV didn't provide */
+            var promises = posts.map(function (post) {
+                if (post.title && post.date) {
+                    post.displayTitle = post.title;
+                    post.displayDate  = post.date;
+                    return Promise.resolve();
+                }
+                return fetch('blogposts/' + post.filename)
+                    .then(function (res) { return res.ok ? res.text() : ''; })
+                    .then(function (md) {
+                        postCache[post.filename] = md;
+                        if (!post.title)  post.displayTitle = extractTitle(md, post.filename);
+                        else              post.displayTitle = post.title;
+                        if (!post.date)   post.displayDate = extractDate(md);
+                        else              post.displayDate = post.date;
+                    })
+                    .catch(function () {
+                        post.displayTitle = post.title || post.filename.replace(/\.md$/i, '');
+                        post.displayDate  = post.date || '';
+                    });
+            });
+
+            Promise.all(promises).then(function () {
+                renderPostList(posts);
+                onHashChange();
+            });
+        })
+        .catch(function () {
+            articleContent.innerHTML = '<div class="error-state"><h2>Could not load blog list</h2><p>Check that <code>bloglist.csv</code> exists.</p></div>';
+        });
+
+})();
+</script>
+
+</body>
+</html>
